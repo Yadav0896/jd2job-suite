@@ -1,0 +1,29 @@
+{
+  "appId": "com.jd2job.app",
+  "productName": "Jd2Job",
+  "directories": {
+    "output": "../dist-electron",
+    "buildResources": "build"
+  },
+  "files": [
+    "dist/**/*",
+    {
+      "from": "../electron",
+      "to": "electron",
+      "filter": ["**/*"]
+    },
+    "package.json"
+  ],
+  "mac": {
+    "target": "dmg",
+    "hardenedRuntime": true,
+    "entitlements": "build/entitlements.mac.plist",
+    "extendInfo": {
+      "NSMicrophoneUsageDescription": "Jd2Job needs access to your microphone to transcribe the interview.",
+      "NSScreenCaptureDescription": "Jd2Job needs access to screen recording to see the interviewer's screen."
+    }
+  },
+  "win": {
+    "target": "nsis"
+  }
+}

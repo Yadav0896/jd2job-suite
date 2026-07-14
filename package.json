@@ -1,0 +1,20 @@
+{
+  "name": "jd2job",
+  "version": "1.0.0",
+  "description": "Jd2Job AI Suite",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npm --prefix backend run dev & npm --prefix frontend run dev",
+    "test": "node test-appcontext.js",
+    "electron:dev": "npm --prefix frontend run electron:dev",
+    "electron:build": "npm --prefix frontend run electron:build",
+    "electron:start": "npm --prefix frontend run electron:start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "shadcn": "^4.8.0"
+  }
+}
