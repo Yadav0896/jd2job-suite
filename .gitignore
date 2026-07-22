@@ -83,7 +83,7 @@ dist
 
 # Gatsby files
 .cache/
-public
+# NOTE: do NOT ignore `public` — Vite serves frontend/public as source assets
 
 # vuepress build output
 .vuepress/dist
