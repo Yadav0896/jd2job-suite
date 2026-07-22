@@ -344,7 +344,7 @@ function AppContent() {
         }}
         handlePayment={async (planId, amountINR) => {
           try {
-            const orderRes = await createOrder(state.user.id, amountINR, planId);
+            const orderRes = await createOrder(state.user.id, planId);
             const verifyRes = await openRazorpayCheckout({
               orderId: orderRes.orderId,
               amountINR: amountINR,

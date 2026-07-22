@@ -24,7 +24,7 @@ global.window = {
 };
 
 // ── Load and parse AppContext reducer ────────────────────────────────────────
-const appContextPath = path.join(__dirname, 'frontend', 'src', 'context', 'AppContext.jsx');
+const appContextPath = path.join(__dirname, '..', '..', 'frontend', 'src', 'context', 'AppContext.jsx');
 const source = fs.readFileSync(appContextPath, 'utf8');
 
 // Extract the appReducer function body and reconstruct it as a standard function

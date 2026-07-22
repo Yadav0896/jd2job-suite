@@ -1,107 +1,99 @@
-# Production Deployment Guide — Interview Copilot
+# Production Deployment Guide — Jd2Job
 
-This guide walks you through deploying the Interview Copilot application to production, using your own live **Supabase** database and hosting platforms.
-
----
-
-## Step 1: Database Setup (Supabase)
-
-The application uses Supabase for authentication, session logging, transcript storage, and credit management. 
-
-1. **Create a Supabase Project**:
-   - Go to [Supabase](https://supabase.com) and create a new project.
-2. **Execute Database Schema**:
-   - Go to the **SQL Editor** tab in your Supabase dashboard.
-   - Click **New Query**.
-   - Copy and paste the entire contents of [supabase_schema.sql](file:///Users/raga_user/Downloads/kk_interview%20copilot/supabase_schema.sql) from the root folder.
-   - Click **Run** to generate the required tables (`profiles`, `sessions`, `transcripts`, `answers`, etc.), indexes, and Row-Level Security (RLS) policies.
+Stack: **Vercel** (frontend, `jd2job.com`) · **Railway** (backend API + WebSocket proxies) · **Supabase** (auth + Postgres) · **Razorpay** (payments) · **Chrome Extension** (LinkedIn auto-apply, pairs with the web app).
 
 ---
 
-## Step 2: Configure Authentication (Google OAuth)
+## Step 1: Database (Supabase)
 
-To allow users to sign in with Google:
-
-1. **Google Cloud Console Setup**:
-   - Open the [Google Cloud Console](https://console.cloud.google.com).
-   - Create a project and navigate to **APIs & Services** -> **OAuth consent screen**.
-   - Set up the consent screen and create an **OAuth client ID** (Web application).
-   - Save the **Client ID** and **Client Secret**.
-2. **Enable Google Provider in Supabase**:
-   - In Supabase, go to **Authentication** -> **Providers** -> **Google**.
-   - Toggle Google authentication **ON**.
-   - Paste the Google Client ID and Google Client Secret.
-   - Copy the **Redirect URI** provided by Supabase (e.g., `https://<your-project-ref>.supabase.co/auth/v1/callback`).
-3. **Configure Google Authorized Redirect URIs**:
-   - Return to your Google Cloud Console OAuth Client configuration.
-   - Add the Supabase Redirect URI to the **Authorized redirect URIs** section.
-4. **Set Production Redirect URIs in Supabase**:
-   - In Supabase, go to **Authentication** -> **URL Configuration**.
-   - Set the **Site URL** to your production frontend URL (e.g., `https://my-interview-copilot.com`).
-   - Add your redirect pattern to **Redirect URLs** (e.g., `https://my-interview-copilot.com/**`).
+1. Create a project at [supabase.com](https://supabase.com).
+2. SQL Editor → New Query → paste the full contents of [`supabase_schema.sql`](supabase_schema.sql) → Run.
+   This creates `profiles`, `sessions`, `transcripts`, `answers`, `credit_transactions`, extension job tables, indexes, and RLS policies.
+3. Authentication → Providers → enable **Email** (and **Google** if you offer OAuth).
+4. Authentication → URL Configuration:
+   - Site URL: `https://jd2job.com`
+   - Redirect URLs: `https://jd2job.com/**`, `http://localhost:5173/**`
+5. From Settings → API, note: **Project URL**, **anon key** (frontend), **service_role key** (backend only — bypasses RLS, never ship it to the client).
 
 ---
 
-## Step 3: Configure Environment Variables
+## Step 2: Backend (Railway)
 
-Create production environment files by copying the templates:
+1. Railway → New Project → Deploy from GitHub repo, root directory `backend/`.
+2. Set every variable from [`backend/.env.example`](backend/.env.example):
 
-### 1. Backend Proxy Config
-- Location: `backend/.env`
-- Template: [backend/.env.example](file:///Users/raga_user/Downloads/kk_interview%20copilot/backend/.env.example)
-- Set variables:
-  ```env
-  PORT=3001
-  CORS_ORIGIN=https://my-interview-copilot.com
-  DEEPGRAM_API_KEY=your-production-deepgram-key
-  NVIDIA_API_KEY=your-production-nvidia-key
-  DEEPSEEK_API_KEY=your-production-deepseek-key
-  SUPABASE_URL=https://<your-project-ref>.supabase.co
-  SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-  ```
-  *(Note: The `SUPABASE_SERVICE_ROLE_KEY` is a secret key that bypasses RLS, which is required by the backend to securely manage user credits and transact with the database. Keep it secure and never expose it on the frontend.)*
+   | Variable | Notes |
+   |---|---|
+   | `PORT` | Railway injects this automatically — do not hardcode |
+   | `CORS_ORIGIN` | `https://jd2job.com,http://localhost:5173` |
+   | `DEEPGRAM_API_KEY` | Required — copilot STT + voice agent |
+   | `DEEPSEEK_API_KEY` | Required — answers, interview agents, extension AI |
+   | `GROQ_API_KEY`, `NVIDIA_API_KEY` | Recommended — fallback chain + fast mode |
+   | `TOGETHER_AI_KEY` | Optional — vision/screen reading |
+   | `ELEVENLABS_API_KEY` | Optional — TTS endpoints |
+   | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Required |
+   | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` | Payments stay disabled until set |
 
-### 2. Frontend Config
-- Location: `frontend/.env`
-- Template: [frontend/.env.example](file:///Users/raga_user/Downloads/kk_interview%20copilot/frontend/.env.example)
-- Set variables:
-  ```env
-  VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
-  VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
-  VITE_API_URL=https://api.my-interview-copilot.com
-  ```
+3. Deploy, then note the public domain, e.g. `https://<app>.up.railway.app`.
+4. Verify: `curl https://<app>.up.railway.app/health` → `{"status":"ok"}`.
+
+**WebSockets:** Railway supports WS upgrades on the same service — `/api/deepgram` and `/api/deepgram-agent` work out of the box. Both require `?token=<supabase access_token>`; unauthenticated upgrades are rejected with 401.
 
 ---
 
-## Step 4: Deploy the Backend (API Server)
+## Step 3: Frontend (Vercel)
 
-You can host the Node.js backend on platforms like **Render**, **Railway**, **Heroku**, or a **VPS** (e.g., AWS EC2, DigitalOcean).
-
-### Option A: Render (Easiest)
-1. Create a Web Service on Render and link it to your GitHub repository.
-2. Set the **Root Directory** to `backend`.
-3. Set the **Build Command** to `npm install`.
-4. Set the **Start Command** to `npm start`.
-5. Under **Environment Variables**, add all the variables configured in `backend/.env`.
-
-### Option B: PM2 on VPS
-1. SSH into your server, pull your code, and navigate to the `backend/` directory.
-2. Install PM2: `npm install -g pm2`.
-3. Start the server:
-   ```bash
-   PORT=3001 CORS_ORIGIN=https://my-interview-copilot.com DEEPGRAM_API_KEY=... pm2 start server.js --name "copilot-backend"
-   ```
+1. Vercel → Import repo, root directory `frontend/`, framework **Vite**.
+2. Environment variables (see [`frontend/.env.example`](frontend/.env.example)):
+   - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+   - `VITE_API_URL` → `https://<app>.up.railway.app` (**direct Railway URL, not `https://jd2job.com`** — voice features open WebSockets to `<VITE_API_URL>/api/deepgram*`, and Vercel rewrites cannot proxy WS upgrades)
+   - `VITE_RAZORPAY_KEY_ID` → your Razorpay key id (publishable, safe to expose)
+3. `frontend/vercel.json` contains a rewrite `/api/:path* → https://REPLACE-WITH-YOUR-RAILWAY-URL.up.railway.app/api/:path*`.
+   Replace the placeholder with your Railway domain. This lets plain REST calls use same-origin `/api/*` (avoids CORS preflights); WS traffic still goes direct via `VITE_API_URL`.
+4. Redeploy after editing `vercel.json`.
 
 ---
 
-## Step 5: Deploy the Frontend (Vite Client)
+## Step 4: Payments (Razorpay)
 
-You can host the React static build on **Vercel**, **Netlify**, **Render Static Site**, or **Cloudflare Pages**.
+1. Get **live** keys at dashboard.razorpay.com → Settings → API Keys.
+2. Backend env: `RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET`. Frontend env: `VITE_RAZORPAY_KEY_ID`.
+3. Plans are priced **server-side only** (`PLAN_PRICES` in `backend/server.js`): Base ₹999/5 credits · Top-up ₹249/1 credit · Monthly Unlimited ₹3999 · Quarterly Unlimited ₹9999. The client sends only `planId`; it cannot set amounts.
+4. Test the flow in Razorpay **test mode** first (`rzp_test_...` keys), then switch to live.
 
-1. Navigate to the `frontend/` directory.
-2. Build the static assets:
-   ```bash
-   npm run build
-   ```
-3. Deploy the resulting `dist/` directory to your static hosting provider.
-4. Set your frontend environment variables on the hosting platform (specifically `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_API_URL` pointing to your deployed backend domain).
+---
+
+## Step 5: Chrome Extension
+
+1. The extension lives in `extension/` (Manifest V3). Load it via `chrome://extensions` → Developer mode → Load unpacked.
+2. Pairing: when a user is signed into the web app, the app writes `jd2job_extension_auth` to `localStorage`; the extension's content script on `jd2job.com` picks it up and stores the session. The user must open `https://jd2job.com` once while logged in.
+3. AI features (`tailor resume`, `generate answer`, ATS score) call `POST <apiBase>/api/extension/*` on the backend with the user's Bearer token. Each tailored resume costs 1 credit (unlimited plans exempt).
+4. For store publishing, bump `version` in `extension/manifest.json` and zip the folder.
+
+---
+
+## Step 6: Smoke Test (production)
+
+- [ ] `GET /health` on Railway → ok
+- [ ] Sign up / sign in on `https://jd2job.com`
+- [ ] Mock interview (conversational): mic connects, agent speaks (proves WS auth + Deepgram)
+- [ ] Copilot session start deducts 1 credit; trial user capped at 10 min, paid at 40 min
+- [ ] Extension: open jd2job.com logged in → popup shows "Connected"; tailor a resume on a LinkedIn job → credit decrements
+- [ ] Razorpay test-mode purchase → credits/plan applied exactly once (re-clicking verify must NOT double-credit — replay protection is in place)
+- [ ] `GET /api/extension/health` with the extension's token → ok
+
+---
+
+## Local Development
+
+```bash
+# Backend (terminal 1)
+cd backend && cp .env.example .env   # fill in keys
+npm install && npm start             # http://localhost:3001
+
+# Frontend (terminal 2)
+cd frontend && cp .env.example .env  # VITE_API_URL=http://localhost:3001
+npm install && npm run dev           # http://localhost:5173
+```
+
+Extension: set `apiBaseOverride: "http://localhost:3001/api"` in `chrome.storage.local` (or leave empty to default to `https://jd2job.com/api`).

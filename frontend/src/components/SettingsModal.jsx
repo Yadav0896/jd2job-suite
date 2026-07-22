@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { getSession } from '../services/supabaseClient';
 import ModelSelector from './ModelSelector';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -15,7 +16,9 @@ function CompanyEnrichmentWidget() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/company-enrichment?name=${encodeURIComponent(companyInput.trim())}`);
+      const session = await getSession();
+      const headers = session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {};
+      const res = await fetch(`${API_BASE}/api/company-enrichment?name=${encodeURIComponent(companyInput.trim())}`, { headers });
       if (!res.ok) throw new Error('Failed to fetch company data');
       const data = await res.json();
       dispatch({ type: 'SET_COMPANY_ENRICHMENT', payload: data });

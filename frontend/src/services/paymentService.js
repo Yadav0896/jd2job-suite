@@ -2,16 +2,18 @@
  * paymentService — Razorpay integration for credit purchases.
  *
  * Flow:
- *  1. Client calls backend /api/payments/create-order with amount + userId
+ *  1. Client calls backend /api/payments/create-order with planId (price set server-side)
  *  2. Backend creates Razorpay order, returns order ID
  *  3. Client opens Razorpay checkout modal
- *  4. On success, backend /api/payments/verify verifies signature
+ *  4. On success, backend /api/payments/verify verifies signature (replay-protected)
  *  5. Backend adds credits to user profile
  */
 
+import { getSession } from './supabaseClient';
+
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-export async function createOrder(userId, amountINR) {
+export async function createOrder(userId, planId) {
   const session = await getSession();
   const token = session?.access_token || '';
   const res = await fetch(`${API_BASE}/api/payments/create-order`, {
@@ -20,7 +22,8 @@ export async function createOrder(userId, amountINR) {
       'Content-Type': 'application/json',
       'Authorization': token ? `Bearer ${token}` : ''
     },
-    body: JSON.stringify({ userId, amount: amountINR }),
+    // Amount is derived server-side from planId — never sent by the client.
+    body: JSON.stringify({ planId }),
   });
   if (!res.ok) {
     const err = await res.text().catch(() => 'Unknown error');
@@ -74,7 +77,7 @@ export function openRazorpayCheckout({ orderId, amountINR, userId, userName, use
         name: userName || '',
         email: userEmail || '',
       },
-      theme: { color: '#6366f1' },
+      theme: { color: '#912f56' },
       handler: async (response) => {
         try {
           const result = await verifyPayment(

@@ -64,6 +64,34 @@ async function requireAuth(req, res, next) {
   }
 }
 
+// ── WebSocket Auth Helper ───────────────────────────────────────────────────
+// WS upgrades can't use Express middleware, so verify the Supabase token here.
+async function verifyWsAuth(request) {
+  try {
+    const { searchParams } = new URL(request.url, `http://${request.headers.host}`);
+    const token = searchParams.get('token');
+    if (!token) return null;
+    if (token.startsWith('mock-token-')) {
+      return { id: token.replace('mock-token-', ''), email: 'mock-user@example.com' };
+    }
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) return null;
+    return user;
+  } catch {
+    return null;
+  }
+}
+
+// Strip the auth token from the query string before forwarding upstream.
+function forwardableQuery(requestUrl) {
+  const idx = requestUrl.indexOf('?');
+  if (idx === -1) return '';
+  const params = new URLSearchParams(requestUrl.slice(idx + 1));
+  params.delete('token');
+  const qs = params.toString();
+  return qs ? `?${qs}` : '';
+}
+
 // ── Simple In-Memory Rate Limiter ───────────────────────────────────────────
 const rateLimitMap = new Map();
 function rateLimiter(maxRequests = 60, windowMs = 60000) {
@@ -133,7 +161,7 @@ const VOICE_SETTINGS = {
 const DEFAULT_VOICE_ID = '21m00Tcm4TlvDq8ikWAM';
 
 // ElevenLabs TTS Endpoint - Generate Speech
-app.post('/api/tts/speak', async (req, res) => {
+app.post('/api/tts/speak', requireAuth, rateLimiter(30, 60000), async (req, res) => {
   if (!ELEVENLABS_API_KEY) {
     return res.status(500).json({ error: 'ElevenLabs API key not configured' });
   }
@@ -179,7 +207,7 @@ app.post('/api/tts/speak', async (req, res) => {
 });
 
 // ElevenLabs TTS Endpoint - Stream Speech (Lower Latency)
-app.post('/api/tts/stream', async (req, res) => {
+app.post('/api/tts/stream', requireAuth, rateLimiter(30, 60000), async (req, res) => {
   if (!ELEVENLABS_API_KEY) {
     return res.status(500).json({ error: 'ElevenLabs API key not configured' });
   }
@@ -224,7 +252,7 @@ app.post('/api/tts/stream', async (req, res) => {
 });
 
 // Get available voices
-app.get('/api/tts/voices', async (req, res) => {
+app.get('/api/tts/voices', requireAuth, rateLimiter(10, 60000), async (req, res) => {
   if (!ELEVENLABS_API_KEY) {
     return res.status(500).json({ error: 'ElevenLabs API key not configured' });
   }
@@ -272,9 +300,6 @@ const { handleChatRoute } = require('./services/modelProvider');
 app.post('/api/deepseek/chat', requireAuth, rateLimiter(60, 60000), async (req, res) => {
   try {
     const upstreamRes = await handleChatRoute(req);
-
-    const fs = require('fs');
-    fs.appendFileSync('proxy.log', `[${new Date().toISOString()}] Chat request processed successfully\n`);
 
     // Stream the response back to the client
     res.setHeader('Content-Type', 'text/event-stream');
@@ -394,8 +419,7 @@ wss.on('connection', (clientWs, req) => {
     return;
   }
 
-  const urlParts = req.url.split('?');
-  const qs = urlParts.length > 1 ? `?${urlParts[1]}` : '';
+  const qs = forwardableQuery(req.url);
   const dgWs = new WebSocket(`${DEEPGRAM_URL}${qs}`, ['token', apiKey]);
 
   let preConnectBuffer = [];
@@ -489,8 +513,7 @@ agentWss.on('connection', (clientWs, req) => {
     return;
   }
 
-  const urlParts = req.url.split('?');
-  const qs = urlParts.length > 1 ? `?${urlParts[1]}` : '';
+  const qs = forwardableQuery(req.url);
   const dgWs = new WebSocket(`${DEEPGRAM_AGENT_URL}${qs}`, ['token', apiKey]);
 
   let preConnectBuffer = [];
@@ -566,18 +589,29 @@ agentWss.on('connection', (clientWs, req) => {
   });
 });
 
-server.on('upgrade', (request, socket, head) => {
+server.on('upgrade', async (request, socket, head) => {
   const { pathname } = new URL(request.url, `http://${request.headers.host}`);
+  if (pathname !== '/api/deepgram' && pathname !== '/api/deepgram-agent') {
+    socket.destroy();
+    return;
+  }
+
+  const user = await verifyWsAuth(request);
+  if (!user) {
+    console.warn(`[WS] Rejected unauthenticated upgrade to ${pathname}`);
+    socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+    socket.destroy();
+    return;
+  }
+
   if (pathname === '/api/deepgram') {
     wss.handleUpgrade(request, socket, head, (ws) => {
       wss.emit('connection', ws, request);
     });
-  } else if (pathname === '/api/deepgram-agent') {
+  } else {
     agentWss.handleUpgrade(request, socket, head, (ws) => {
       agentWss.emit('connection', ws, request);
     });
-  } else {
-    socket.destroy();
   }
 });
 
@@ -611,7 +645,7 @@ app.get('/health', (req, res) => {
 // COMPANY ENRICHMENT — /api/company-enrichment?name=<CompanyName>
 // Uses the Nvidia NIM inference API to generate brief company context
 // ════════════════════════════════════════════════════════════════════════════
-app.get('/api/company-enrichment', async (req, res) => {
+app.get('/api/company-enrichment', requireAuth, rateLimiter(10, 60000), async (req, res) => {
   const { name } = req.query;
   if (!name) return res.status(400).json({ error: 'Company name is required' });
 
@@ -708,9 +742,12 @@ app.get('/api/supabase/session', async (req, res) => {
   }
 });
 
-// Get user profile
-app.get('/api/supabase/profile/:userId', async (req, res) => {
+// Get user profile (own profile only)
+app.get('/api/supabase/profile/:userId', requireAuth, async (req, res) => {
   try {
+    if (req.params.userId !== req.user.id) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -724,11 +761,12 @@ app.get('/api/supabase/profile/:userId', async (req, res) => {
   }
 });
 
-// Deduct credits (privileged — uses service role to bypass RLS)
+// Deduct credits (privileged — uses service role to bypass RLS; own account only)
 app.post('/api/supabase/credits/deduct', requireAuth, async (req, res) => {
   try {
     const { userId, amount = 1, sessionId } = req.body;
     if (!userId) return res.status(400).json({ error: 'userId required' });
+    if (userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
@@ -761,9 +799,12 @@ app.post('/api/supabase/credits/deduct', requireAuth, async (req, res) => {
   }
 });
 
-// Get user's session history
-app.get('/api/supabase/sessions/:userId', async (req, res) => {
+// Get user's session history (own sessions only)
+app.get('/api/supabase/sessions/:userId', requireAuth, async (req, res) => {
   try {
+    if (req.params.userId !== req.user.id) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
     // Fetch sessions
     const { data: sessions, error } = await supabase
       .from('sessions')
@@ -838,7 +879,7 @@ app.post('/api/interview/evaluate-answer', requireAuth, async (req, res) => {
 
 
 // Quick Deepgram API key validation — opens a WebSocket, checks it connects, closes it
-app.get('/api/deepgram/test', async (req, res) => {
+app.get('/api/deepgram/test', requireAuth, async (req, res) => {
   const apiKey = process.env.DEEPGRAM_API_KEY;
   if (!apiKey) return res.status(500).json({ ok: false, error: 'DEEPGRAM_API_KEY not set in .env' });
 
@@ -861,112 +902,10 @@ app.get('/api/deepgram/test', async (req, res) => {
   }
 });
 
-// ── Deepgram Voice Agent Configuration ─────────────────────────────────────────
-// Deepgram Voice Agent with custom system prompt for Interviews
-app.post('/api/interview/agent/config', async (req, res) => {
-  const apiKey = process.env.DEEPGRAM_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Deepgram API key not configured' });
-  }
-
-  const { 
-    interviewType = 'technical',
-    difficulty = 'medium', 
-    resumeData, 
-    jobDescription,
-    voiceModel = 'aura-2-asteria-en',
-    llmProvider = 'open_ai',
-    llmModel = 'gpt-4o-mini',
-    customPrompt 
-  } = req.body;
-
-  const difficultyPrompts = {
-    easy: 'Ask fundamental questions appropriate for a junior to mid-level position. Focus on basic concepts and foundational knowledge.',
-    medium: 'Ask standard interview questions appropriate for a mid-level position. Include practical scenarios and problem-solving.',
-    hard: 'Ask advanced technical questions for senior/staff level. Include deep-dive scenarios, trade-offs, and architecture decisions.'
-  };
-
-  const resumeContext = resumeData ? `\nCandidate's Resume:\n${resumeData}\n` : '';
-  const jdContext = jobDescription ? `\nJob Description:\n${jobDescription}\n` : '';
-
-  const defaultPrompt = `You are an expert interviewer conducting a ${difficulty} ${interviewType} interview.
-Your role: Ask relevant ${interviewType} interview questions.
-Focus areas: ${difficultyPrompts[difficulty] || difficultyPrompts.medium}
-${resumeContext}${jdContext}
-
-Rules:
-- Ask one question at a time
-- Wait for the candidate's response
-- Provide brief, encouraging feedback after each answer
-- Move to the next question naturally
-- Keep questions concise and clear
-- Use the STAR method for behavioral questions`;
-
-  const systemPrompt = customPrompt || defaultPrompt;
-
-  const config = {
-    type: 'Settings',
-    agent: {
-      think: {
-        provider: {
-          type: llmProvider
-        },
-        model: llmModel
-      },
-      speak: {
-        provider: {
-          type: 'deepgram'
-        },
-        model: voiceModel
-      },
-      listen: {
-        provider: {
-          type: 'deepgram'
-        },
-        model: 'nova-2'
-      },
-      commands: [
-        {
-          type: 'system',
-          content: systemPrompt
-        }
-      ]
-    }
-  };
-
-  res.json(config);
-});
-
-// Get available Deepgram Agent voices
-app.get('/api/interview/agent/voices', (req, res) => {
-  const voices = [
-    { id: 'aura-2-asteria-en', name: 'Asteria', gender: 'female', style: 'professional', description: 'Female, professional and authoritative' },
-    { id: 'aura-2-astra-en', name: 'Astra', gender: 'female', style: 'friendly', description: 'Female, friendly and approachable' },
-    { id: 'aura-2-luna-en', name: 'Luna', gender: 'female', style: 'warm', description: 'Female, warm and conversational' },
-    { id: 'aura-2-orphus-en', name: 'Orpheus', gender: 'male', style: 'authoritative', description: 'Male, authoritative and confident' },
-    { id: 'aura-2-ares-en', name: 'Ares', gender: 'male', style: 'calm', description: 'Male, calm and reassuring' }
-  ];
-
-  res.json({
-    voices,
-    default: 'aura-2-asteria-en'
-  });
-});
-
-// Deepgram Voice Agent proxy - returns WebSocket URL for client to connect directly
-app.get('/api/interview/agent/url', (req, res) => {
-  const apiKey = process.env.DEEPGRAM_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Deepgram API key not configured' });
-  }
-
-  const wsUrl = 'wss://agent.deepgram.com/v1/agent/converse?agent=true';
-  
-  res.json({
-    url: wsUrl,
-    instructions: 'Use WebSocket with token authentication. Send Settings message first, then StartConversation.'
-  });
-});
+// NOTE: The Deepgram Voice Agent runs through the authenticated WS proxy at
+// /api/deepgram-agent (see server.on('upgrade')). The old unauthenticated
+// /api/interview/agent/config|url|voices endpoints were removed as dead code —
+// the frontend builds its own Settings payload (deepgramAgentService.js).
 
 // ════════════════════════════════════════════════════════════════════════════
 // RAZORPAY PAYMENT ROUTES
@@ -981,16 +920,26 @@ const razorpayInstance = process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY
     })
   : null;
 
+// Server-side plan prices (INR) — the client can NEVER set the amount.
+const PLAN_PRICES = {
+  base: 999,
+  topup: 249,
+  monthly_unlimited: 3999,
+  quarterly_unlimited: 9999,
+};
+
 // Create order
 app.post('/api/payments/create-order', requireAuth, async (req, res) => {
   if (!razorpayInstance) {
     return res.status(500).json({ error: 'Razorpay not configured' });
   }
 
-  const { userId, amount, planId } = req.body;
-  if (!userId || !amount) {
-    return res.status(400).json({ error: 'userId and amount are required' });
+  const { planId } = req.body;
+  const amount = PLAN_PRICES[planId];
+  if (!amount) {
+    return res.status(400).json({ error: 'Unknown or missing planId' });
   }
+  const userId = req.user.id;
 
   try {
     const order = await razorpayInstance.orders.create({
@@ -1017,13 +966,26 @@ app.post('/api/payments/verify', requireAuth, async (req, res) => {
     return res.status(500).json({ error: 'Razorpay not configured' });
   }
 
-  const { razorpay_payment_id, razorpay_order_id, razorpay_signature, userId } = req.body;
+  const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
+  const userId = req.user.id; // never trust a client-supplied userId
 
   if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
     return res.status(400).json({ error: 'Missing payment verification fields' });
   }
 
   try {
+    // Idempotency: a payment id must only ever credit once (blocks replay attacks)
+    const { data: existingTx } = await supabase
+      .from('credit_transactions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('metadata->>payment_id', razorpay_payment_id)
+      .maybeSingle();
+    if (existingTx) {
+      const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
+      return res.json({ success: true, alreadyProcessed: true, profile });
+    }
+
     const body = razorpay_order_id + '|' + razorpay_payment_id;
     const expectedSignature = crypto
       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
@@ -1038,6 +1000,14 @@ app.post('/api/payments/verify', requireAuth, async (req, res) => {
     const order = await razorpayInstance.orders.fetch(razorpay_order_id);
     const planId = order.notes?.planId;
     const amountINR = order.amount / 100;
+
+    // Price consistency: the paid amount must match the plan's server-side price
+    if (order.notes?.userId && order.notes.userId !== userId) {
+      return res.status(403).json({ error: 'Order does not belong to this user' });
+    }
+    if (planId && PLAN_PRICES[planId] && amountINR !== PLAN_PRICES[planId]) {
+      return res.status(400).json({ error: 'Paid amount does not match plan price' });
+    }
 
     // Fetch user profile
     const { data: profile, error: profileError } = await supabase
@@ -1181,12 +1151,10 @@ app.get('/api/download', (req, res) => {
 });
 
 // ── Jd2Job Chrome Extension Sync Routes ──────────────────────────────────────
-app.post('/api/jd2job/sync', async (req, res) => {
-  const { userId, jobs } = req.body;
-  
-  if (!userId) {
-    return res.status(400).json({ error: 'Missing userId for sync' });
-  }
+app.post('/api/jd2job/sync', requireAuth, rateLimiter(20, 60000), async (req, res) => {
+  const { jobs } = req.body;
+  const userId = req.user.id;
+
   if (!Array.isArray(jobs)) {
     return res.status(400).json({ error: 'Jobs must be an array' });
   }
@@ -1305,4 +1273,138 @@ app.post('/api/jd2job/local-session', (req, res) => {
 
 app.get('/api/jd2job/local-session', (req, res) => {
   res.json({ success: true, userId: activeLocalUserId });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// EXTENSION API — server-side AI for the Jd2Job Chrome extension
+// All routes require a Supabase JWT (Authorization: Bearer <token>).
+// ════════════════════════════════════════════════════════════════════════════
+const extensionService = require('./services/extensionService');
+
+// Public health check (used by the extension to verify connectivity + API version)
+app.get('/api/extension/health', (req, res) => {
+  res.json({ status: 'ok', service: 'jd2job-extension-api', version: '2.0', time: new Date().toISOString() });
+});
+
+// Account snapshot for the extension popup (credits, plan)
+app.get('/api/extension/me', requireAuth, async (req, res) => {
+  try {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('id, display_name, credits, plan_type, plan_expires_at')
+      .eq('id', req.user.id)
+      .single();
+
+    if (error) return res.status(404).json({ error: 'Profile not found' });
+
+    const now = new Date();
+    const planExpired = profile.plan_expires_at && new Date(profile.plan_expires_at) < now;
+    const effectivePlan = planExpired ? 'trial' : (profile.plan_type || 'trial');
+
+    res.json({
+      id: req.user.id,
+      email: req.user.email,
+      displayName: profile.display_name,
+      credits: profile.credits,
+      planType: effectivePlan,
+      planExpiresAt: profile.plan_expires_at,
+      unlimited: effectivePlan === 'monthly_unlimited' || effectivePlan === 'quarterly_unlimited',
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Deduct one credit for a paid action. Returns { ok, credits, reason }.
+async function deductCreditFor(userId, reason, metadata = {}) {
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('credits, plan_type, plan_expires_at')
+    .eq('id', userId)
+    .single();
+
+  // PGRST116 = zero rows → genuinely unknown user. Anything else (network,
+  // DB outage) must not masquerade as "User not found".
+  if (error) {
+    if (error.code === 'PGRST116') return { ok: false, status: 404, reason: 'User not found' };
+    console.error('[Credits] profile lookup failed:', error.message);
+    return { ok: false, status: 503, reason: 'Account lookup failed. Please try again.' };
+  }
+
+  const now = new Date();
+  const planExpired = profile.plan_expires_at && new Date(profile.plan_expires_at) < now;
+  const unlimited = !planExpired &&
+    (profile.plan_type === 'monthly_unlimited' || profile.plan_type === 'quarterly_unlimited');
+
+  if (unlimited) return { ok: true, credits: profile.credits, unlimited: true };
+
+  if ((profile.credits || 0) < 1) {
+    return { ok: false, status: 402, reason: 'Insufficient credits. Please upgrade your plan or top up.' };
+  }
+
+  const newCredits = profile.credits - 1;
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({ credits: newCredits, updated_at: new Date().toISOString() })
+    .eq('id', userId);
+
+  if (updateError) return { ok: false, status: 500, reason: updateError.message };
+
+  await supabase.from('credit_transactions').insert({
+    user_id: userId,
+    amount: -1,
+    reason,
+    metadata,
+  });
+
+  return { ok: true, credits: newCredits };
+}
+
+// Generate a JD-tailored resume. Costs 1 credit (free on unlimited plans).
+app.post('/api/extension/tailor-resume', requireAuth, rateLimiter(10, 60000), async (req, res) => {
+  const { jobDescription, jobTitle, companyName, baseResumeText } = req.body || {};
+
+  if (!jobDescription || !baseResumeText) {
+    return res.status(400).json({ error: 'jobDescription and baseResumeText are required' });
+  }
+
+  try {
+    const deduction = await deductCreditFor(req.user.id, 'tailored_resume', {
+      jobTitle: (jobTitle || '').slice(0, 200),
+      companyName: (companyName || '').slice(0, 200),
+    });
+
+    if (!deduction.ok) {
+      return res.status(deduction.status || 500).json({ error: deduction.reason });
+    }
+
+    const result = await extensionService.tailorResume({
+      baseResumeText,
+      jobDescription,
+      jobTitle,
+      companyName,
+    });
+
+    res.json({ success: true, ...result, credits: deduction.credits });
+  } catch (err) {
+    console.error('[Extension] tailor-resume error:', err.message);
+    res.status(502).json({ error: err.message || 'Failed to generate tailored resume' });
+  }
+});
+
+// Generate a short answer for an application form question. Free (rate limited).
+app.post('/api/extension/answer', requireAuth, rateLimiter(30, 60000), async (req, res) => {
+  const { question, fieldType, baseResumeText } = req.body || {};
+
+  if (!question) {
+    return res.status(400).json({ error: 'question is required' });
+  }
+
+  try {
+    const result = await extensionService.generateAnswer({ question, fieldType, baseResumeText });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    console.error('[Extension] answer error:', err.message);
+    res.status(502).json({ error: err.message || 'Failed to generate answer' });
+  }
 });

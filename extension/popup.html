@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jd2Job</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <img src="icons/icon48.png" alt="Jd2Job" width="24" height="24" style="display:block;border-radius:4px;">
+        <div class="title-group">
+          <h1>Jd2Job</h1>
+        </div>
+      </div>
+      <span class="version">v2.0.0</span>
+    </div>
+
+    <!-- Connection Status Banner -->
+    <div id="sync-status-banner" style="
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.15);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.85rem;
+    ">
+      <!-- Will be populated dynamically by popup.js -->
+    </div>
+
+    <!-- Dashboard Quick Stats -->
+    <div class="dashboard">
+      <div class="stat-card">
+        <span class="stat-label">Status</span>
+        <span id="status" class="status-value stopped">Stopped</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Applied</span>
+        <span id="applied-count" class="status-number">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Skipped</span>
+        <span id="skipped-count" class="status-number">0</span>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="profile">Profile</button>
+      <button class="tab" data-tab="resume-ai">Resume AI</button>
+      <button class="tab" data-tab="history">History</button>
+      <button class="tab" data-tab="settings">Settings</button>
+    </div>
+
+    <!-- TAB 1: PROFILE -->
+    <div id="profile-tab" class="tab-content active">
+      <div id="parsing-loader" class="parsing-loader-banner" style="display: none; align-items: center; gap: 10px; background: #e0f2fe; color: #0369a1; padding: 10px 14px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; font-weight: 500; border: 1px solid #bae6fd;">
+        <div class="spinner-small"></div>
+        <span>🤖 AI is extracting profile details from your resume...</span>
+      </div>
+      
+      <div class="form-group">
+        <label for="jobSearchTitle" style="color: var(--primary); font-weight: 700;">Target Job Title (to search automatically)</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="jobSearchTitle" placeholder="e.g. AI Engineer, React Developer" style="flex: 1; margin-bottom: 0;">
+          <button type="button" id="search-jobs-btn" class="btn btn-secondary" style="padding: 0 16px; font-size: 13px; white-space: nowrap;">Search</button>
+        </div>
+      </div>
+      <hr class="divider" style="margin: 15px 0;">
+
+      <div class="form-group-row">
+        <div class="form-group">
+          <label for="firstName">First Name</label>
+          <input type="text" id="firstName" placeholder="John" required>
+        </div>
+        <div class="form-group">
+          <label for="lastName">Last Name</label>
+          <input type="text" id="lastName" placeholder="Doe" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" placeholder="john.doe@example.com" required>
+      </div>
+
+      <div class="form-group-row">
+        <div class="form-group" style="flex: 0 0 90px;">
+          <label for="phoneCountryCode">Code</label>
+          <select id="phoneCountryCode">
+            <option value="+1">+1 (US/CA)</option>
+            <option value="+33">+33 (FR)</option>
+            <option value="+44">+44 (UK)</option>
+            <option value="+91" selected>+91 (IN)</option>
+            <option value="+49">+49 (DE)</option>
+            <option value="+34">+34 (ES)</option>
+            <option value="+39">+39 (IT)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="phone">Phone Number</label>
+          <input type="tel" id="phone" placeholder="1234567890" required>
+        </div>
+      </div>
+
+      <div class="form-group-row">
+        <div class="form-group" style="flex: 2;">
+          <label for="city">City & Location</label>
+          <input type="text" id="city" placeholder="New York, NY" required>
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label for="postalCode">Postal/ZIP</label>
+          <input type="text" id="postalCode" placeholder="e.g. 560001">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="linkedin">LinkedIn Profile URL</label>
+        <input type="text" id="linkedin" placeholder="https://linkedin.com/in/username">
+      </div>
+
+      <div class="form-group-row">
+        <div class="form-group">
+          <label for="github">GitHub URL</label>
+          <input type="text" id="github" placeholder="https://github.com/username">
+        </div>
+        <div class="form-group">
+          <label for="portfolio">Portfolio URL</label>
+          <input type="text" id="portfolio" placeholder="https://portfolio.com">
+        </div>
+      </div>
+
+      <div class="form-group-row">
+        <div class="form-group">
+          <label for="yearsOfExperience">Years of Experience</label>
+          <input type="number" id="yearsOfExperience" placeholder="2" value="2" min="0" required>
+        </div>
+        <div class="form-group">
+          <label for="noticePeriod">Notice Period (Days)</label>
+          <input type="number" id="noticePeriod" placeholder="30" min="0" value="0">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Resume File</label>
+        <div class="file-input-wrapper">
+          <input type="file" id="resumeFile" accept=".pdf,.doc,.docx" style="display: none;">
+          <button type="button" id="uploadResumeBtn" class="btn-upload">Choose File</button>
+          <span id="resumeFileName" class="file-name">No file chosen</span>
+          <button type="button" id="removeResumeBtn" class="btn-remove" style="display: none;">×</button>
+        </div>
+      </div>
+
+      <div class="control-actions" style="margin-top: 20px;">
+        <button id="start-btn" class="btn btn-primary" style="flex:1">Start Bot</button>
+        <button id="stop-btn" class="btn btn-danger" style="flex:1" disabled>Stop Bot</button>
+      </div>
+    </div>
+
+    <!-- TAB 2: RESUME AI (ATS score and tailoring) -->
+    <div id="resume-ai-tab" class="tab-content">
+      <div class="form-group">
+        <label>Target Job Description (JD)</label>
+        <textarea id="ats-target-jd" rows="6" placeholder="Paste the Job Description (JD) here to analyze ATS match..."></textarea>
+      </div>
+
+      <div class="control-actions" style="margin-bottom: 20px; gap: 8px;">
+        <button id="btn-analyze-ats" class="btn btn-primary" style="flex:1">Analyze ATS Match</button>
+        <button id="btn-download-tailored" class="btn btn-secondary" style="flex:1" disabled>Download Tailored PDF</button>
+      </div>
+
+      <!-- ATS Results Section (hidden by default) -->
+      <div id="ats-results" style="display:none; border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: #f8fafc; margin-bottom: 15px;">
+        <div style="display:flex; align-items:center; justify-content:center; gap: 20px; margin-bottom: 15px;">
+          <!-- Circular Progress Bar -->
+          <div class="ats-circle" id="ats-circle">
+            <span class="ats-percentage" id="ats-score-text">0%</span>
+          </div>
+          <div style="flex:1;">
+            <h4 style="font-family:'Outfit'; font-size:15px; color:var(--text-main); margin-bottom:4px;">ATS Match Score</h4>
+            <p id="ats-feedback" style="font-size:12px; color:var(--text-muted); line-height:1.4;">Analyzing match...</p>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div>
+            <h5 style="font-size:11px; font-weight:700; color:var(--accent-green); text-transform:uppercase; margin-bottom:6px;">✓ Matched Keywords</h5>
+            <div id="ats-matched-list" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+          </div>
+          <div>
+            <h5 style="font-size:11px; font-weight:700; color:var(--danger); text-transform:uppercase; margin-bottom:6px;">✗ Missing Keywords (Gaps)</h5>
+            <div id="ats-missing-list" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+          </div>
+        </div>
+
+        <!-- Cover Letter Generator UI -->
+        <hr class="divider" style="margin: 15px 0;">
+        <button id="btn-gen-cover" class="btn btn-secondary" style="width:100%; margin-bottom:10px;">Generate Cover Letter</button>
+        
+        <div id="cover-letter-section" style="display:none; border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: #f8fafc;">
+          <h4 style="font-family:'Outfit'; font-size:14px; color:var(--text-main); margin-bottom:8px;">AI Tailored Cover Letter</h4>
+          <textarea id="cover-letter-text" rows="8" style="font-size:12px; line-height:1.5; margin-bottom:10px; width:100%; box-sizing:border-box;"></textarea>
+          <button id="btn-download-cover" class="btn btn-primary" style="width:100%;">Download Cover Letter PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: HISTORY -->
+    <div id="history-tab" class="tab-content">
+      <h3 style="font-family:'Outfit'; font-size:16px; color:var(--primary); margin-bottom:12px; font-weight:700;">Applied Jobs Log</h3>
+      <div id="history-list-container" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; background: #f8fafc; padding: 10px;">
+        <div id="history-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+      </div>
+    </div>
+
+    <!-- TAB 3: SETTINGS -->
+    <div id="settings-tab" class="tab-content">
+      <div class="form-group">
+        <label for="apiKey">DeepSeek API Key (Optional)</label>
+        <div style="display:flex;gap:8px">
+          <input type="password" id="apiKey" placeholder="sk-..." style="flex:1" autocomplete="off">
+          <button type="button" id="toggle-api-key" class="btn-eye" title="Show/Hide">👁</button>
+        </div>
+        <p class="field-desc">Optional fallback — AI uses your connected Jd2Job account by default. Only needed if you're not signed in.</p>
+      </div>
+
+
+      <div class="form-group">
+        <label for="blacklistKeywords">Blacklist Keywords</label>
+        <input type="text" id="blacklistKeywords" placeholder="internship, junior, contract">
+        <p class="field-desc">Skip jobs containing these keywords (comma-separated).</p>
+      </div>
+
+      <div class="form-group-row">
+        <div class="form-group">
+          <label for="maxYearsRequired">Max Exp. Required</label>
+          <input type="number" id="maxYearsRequired" placeholder="3" min="0" max="20" value="3">
+        </div>
+        <div class="form-group">
+          <label for="expectedSalary">Expected Salary</label>
+          <input type="number" id="expectedSalary" placeholder="60000" min="0">
+        </div>
+      </div>
+
+      <div class="form-group-grid">
+        <div class="form-group">
+          <label for="visaSponsorship">Requires Sponsorship?</label>
+          <select id="visaSponsorship">
+            <option value="no" selected>No (Default)</option>
+            <option value="yes">Yes</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="legallyAuthorized">Legally Authorized?</label>
+          <select id="legallyAuthorized">
+            <option value="yes" selected>Yes (Default)</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="willingToRelocate">Willing to Relocate?</label>
+          <select id="willingToRelocate">
+            <option value="yes">Yes</option>
+            <option value="no" selected>No (Default)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="driversLicense">Has Driver's License?</label>
+          <select id="driversLicense">
+            <option value="yes" selected>Yes (Default)</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="toggle-group">
+        <label class="switch-container">
+          <input type="checkbox" id="aiAnswers">
+          <span class="switch-slider"></span>
+          <span class="switch-label">Enable AI Form Answering</span>
+        </label>
+      </div>
+
+      <div class="toggle-group">
+        <label class="switch-container">
+          <input type="checkbox" id="aiTailorResume">
+          <span class="switch-slider"></span>
+          <span class="switch-label">Tailor Resume with AI</span>
+        </label>
+      </div>
+
+      <!-- Settings Tab Resume Upload -->
+      <div class="form-group" style="margin-top: 10px;">
+        <label>Upload Resume File</label>
+        <div class="file-input-wrapper">
+          <input type="file" id="settingsResumeFile" accept=".pdf,.doc,.docx" style="display: none;">
+          <button type="button" id="settingsUploadResumeBtn" class="btn-upload">Choose File</button>
+          <span id="settingsResumeFileName" class="file-name">No file chosen</span>
+          <button type="button" id="settingsRemoveResumeBtn" class="btn-remove" style="display: none;">×</button>
+        </div>
+      </div>
+
+      <div class="form-group" id="ai-resume-text-group" style="margin-top: 10px;">
+        <label for="aiResumeText">AI Resume Reference Text</label>
+        <textarea id="aiResumeText" rows="4" placeholder="Paste plain text version of your resume for AI reference..."></textarea>
+      </div>
+
+      <div class="toggle-group" style="margin-top: 15px;">
+        <label class="switch-container">
+          <input type="checkbox" id="autoNextPage" checked>
+          <span class="switch-slider"></span>
+          <span class="switch-label">Auto-Navigate to Next Page</span>
+        </label>
+      </div>
+
+      <!-- Daily Application Cap -->
+      <div class="toggle-group" style="margin-top: 15px;">
+        <label class="switch-container">
+          <input type="checkbox" id="dailyCapEnabled" checked>
+          <span class="switch-slider"></span>
+          <span class="switch-label">Enable Daily Application Cap</span>
+        </label>
+      </div>
+      <div class="form-group" id="daily-cap-limit-group" style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between;">
+        <label for="dailyCapLimit" style="margin-bottom: 0;">Max Applications per Day</label>
+        <input type="number" id="dailyCapLimit" value="50" min="1" max="500" style="width: 80px; margin-bottom: 0; text-align: center;">
+      </div>
+
+      <hr class="divider" style="margin: 20px 0 15px 0;">
+      <h3 style="font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Demographics & Disclosures</h3>
+      
+      <div class="form-group-grid" style="margin-bottom: 15px;">
+        <div class="form-group">
+          <label for="gender">Gender</label>
+          <select id="gender">
+            <option value="decline" selected>Decline to Self-Identify</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="race">Race/Ethnicity</label>
+          <select id="race">
+            <option value="decline" selected>Decline to Self-Identify</option>
+            <option value="white">White</option>
+            <option value="black">Black/African American</option>
+            <option value="hispanic">Hispanic/Latino</option>
+            <option value="asian">Asian</option>
+            <option value="native">Native American</option>
+            <option value="other">Other/Multiracial</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="veteran">Veteran Status</label>
+          <select id="veteran">
+            <option value="decline" selected>Decline to Self-Identify</option>
+            <option value="no">Non-Veteran</option>
+            <option value="yes">Veteran</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="disability">Disability Status</label>
+          <select id="disability">
+            <option value="decline" selected>Decline to Self-Identify</option>
+            <option value="no">No Disability</option>
+            <option value="yes">Has Disability</option>
+          </select>
+        </div>
+      </div>
+
+      <hr class="divider" style="margin: 20px 0 15px 0;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="font-size: 13px; font-weight: 700; color: var(--text-main); margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">🧠 Learned Q&A Memory</h3>
+        <button type="button" id="btn-toggle-manual-qa" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;">+ Add Q&A</button>
+      </div>
+
+      <!-- Inline Manual Q&A Adder Form (hidden by default) -->
+      <div id="manual-qa-form" style="display: none; border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: #f8fafc; margin-bottom: 15px;">
+        <div class="form-group" style="margin-bottom: 8px;">
+          <label style="font-size: 11px;">Question (exact keyword or token phrase)</label>
+          <input type="text" id="manual-q-input" placeholder="e.g. expected salary, relocation" style="font-size: 12px; margin-bottom: 0;">
+        </div>
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label style="font-size: 11px;">Answer value</label>
+          <input type="text" id="manual-a-input" placeholder="e.g. 85000, yes" style="font-size: 12px; margin-bottom: 0;">
+        </div>
+        <button type="button" id="btn-save-manual-qa" class="btn btn-primary" style="width: 100%; font-size: 12px; padding: 6px 0;">Save Learned Memory</button>
+      </div>
+
+      <div id="learned-qa-container" style="max-height: 180px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 10px; background: #f8fafc; margin-bottom: 15px;">
+        <div id="learned-qa-list" style="display: flex; flex-direction: column; gap: 8px;">
+          <p style="font-size: 12px; color: var(--text-light); text-align: center; margin: 10px 0;">No custom questions learned yet. Answer them manually during applications to train the bot!</p>
+        </div>
+      </div>
+
+      <div class="console-actions" style="margin-top: 20px; display: flex; gap: 8px;">
+        <button id="reset-btn" class="btn btn-secondary" style="flex:1">Reset Counters</button>
+        <button id="export-btn" class="btn btn-secondary" style="flex:1">Export Applied Jobs</button>
+      </div>
+    </div>
+
+    <!-- Footer Action Bar -->
+    <div class="footer">
+      <button id="save-btn" class="btn btn-primary btn-save">Save Profile & Settings</button>
+    </div>
+  </div>
+
+  <script src="src/shared/utils.js"></script>
+  <script src="src/shared/api-client.js"></script>
+  <script src="src/shared/ai.js"></script>
+  <script src="src/shared/storage.js"></script>
+  <script src="popup-improvements.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

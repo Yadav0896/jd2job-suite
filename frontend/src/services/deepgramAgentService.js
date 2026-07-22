@@ -1,3 +1,5 @@
+import { getSession } from './supabaseClient';
+
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const DEEPGRAM_AGENT_URL = API_BASE.replace(/^http/, 'ws') + '/api/deepgram-agent';
 
@@ -12,9 +14,26 @@ export const VOICE_OPTIONS = {
 export const LLM_PROVIDERS = ['open_ai', 'anthropic', 'google', 'deepseek'];
 export const DEFAULT_LLM = 'open_ai';
 export const DEFAULT_LLM_MODEL = 'gpt-4o-mini';
-export const DEFAULT_STT_MODEL = 'flux-general-en';
+// nova-2 measured faster end-of-turn than flux-general-en in live tests
+// (1132ms vs 2645ms turn latency). Keep nova-2 as the default.
+export const DEFAULT_STT_MODEL = 'nova-2';
 export const DEFAULT_TTS_MODEL = 'aura-2-asteria-en';
 
+/**
+ * Deepgram Voice Agent client.
+ *
+ * Protocol (verified end-to-end against the live API):
+ *  - Client → server: one JSON `Settings` message with nested
+ *    `audio.input` / `audio.output` (output must use container: 'none'),
+ *    then raw binary linear16 PCM frames from the mic at 16kHz.
+ *  - Server → client: JSON control messages (Welcome, SettingsApplied,
+ *    ConversationText { role, content }, UserStartedSpeaking, AgentThinking,
+ *    AgentAudioDone, History, LatencyReport, Error) and agent speech as
+ *    raw binary PCM frames at audio.output.sample_rate.
+ *  - There is NO StartConversation / StopConversation / Interrupt message —
+ *    the agent starts when Settings is applied and barge-in is detected
+ *    upstream (UserStartedSpeaking); we only need to stop local playback.
+ */
 export class DeepgramVoiceAgent {
   constructor(options = {}) {
     this.apiKey = options.apiKey;
@@ -23,7 +42,8 @@ export class DeepgramVoiceAgent {
     this.sttModel = options.sttModel || DEFAULT_STT_MODEL;
     this.ttsModel = options.ttsModel || DEFAULT_TTS_MODEL;
     this.systemPrompt = options.systemPrompt || '';
-    
+    this.greeting = options.greeting || '';
+
     this.onTranscript = options.onTranscript || (() => {});
     this.onAgentResponse = options.onAgentResponse || (() => {});
     this.onSpeakingChanged = options.onSpeakingChanged || (() => {});
@@ -50,36 +70,33 @@ export class DeepgramVoiceAgent {
     this.connectReject = null;
     this.playbackContext = null;
     this.currentSource = null;
+    this.speechEndTimer = null;
   }
 
   getAgentConfig() {
+    const agent = {
+      language: 'en',
+      listen: {
+        provider: { type: 'deepgram', model: this.sttModel }
+      },
+      think: {
+        provider: { type: this.llmProvider, model: this.llmModel },
+        prompt: this.systemPrompt
+      },
+      speak: {
+        provider: { type: 'deepgram', model: this.ttsModel }
+      }
+    };
+    if (this.greeting) {
+      agent.greeting = this.greeting;
+    }
     return {
       type: 'Settings',
       audio: {
-        encoding: 'linear16',
-        sample_rate: 16000,
-        layout: 'mono'
+        input: { encoding: 'linear16', sample_rate: 16000 },
+        output: { encoding: 'linear16', sample_rate: 16000, container: 'none' }
       },
-      agent: {
-        think: {
-          provider: {
-            type: this.llmProvider,
-            model: this.llmModel
-          }
-        },
-        speak: {
-          provider: {
-            type: 'deepgram',
-            model: this.ttsModel
-          }
-        },
-        listen: {
-          provider: {
-            type: 'deepgram',
-            model: this.sttModel
-          }
-        }
-      }
+      agent
     };
   }
 
@@ -90,11 +107,22 @@ export class DeepgramVoiceAgent {
     }
 
     try {
+      const session = await getSession();
+      const token = session?.access_token;
+      if (!token) {
+        const err = new Error('Not authenticated — please sign in to use the voice agent.');
+        this.onError(err);
+        return false;
+      }
+
       return new Promise((resolve, reject) => {
         const wsUrl = new URL(DEEPGRAM_AGENT_URL);
         wsUrl.searchParams.set('agent', 'true');
-        
+        wsUrl.searchParams.set('token', token);
+
         this.ws = new WebSocket(wsUrl.toString());
+        // Agent speech arrives as raw binary PCM frames, not JSON.
+        this.ws.binaryType = 'arraybuffer';
         this.connectResolve = resolve;
         this.connectReject = reject;
 
@@ -107,16 +135,17 @@ export class DeepgramVoiceAgent {
 
         this.ws.onopen = () => {
           console.log('Deepgram Agent: Connected, sending Settings...');
-          
-          const config = this.getAgentConfig();
-          console.log('Sending config:', JSON.stringify(config, null, 2));
-          this.ws.send(JSON.stringify(config));
-          
+          this.ws.send(JSON.stringify(this.getAgentConfig()));
           this.sessionReady = false;
         };
 
         this.ws.onmessage = (event) => {
-          this.handleMessage(event.data);
+          if (typeof event.data === 'string') {
+            this.handleMessage(event.data);
+          } else {
+            // Binary frame = agent speech (raw linear16 PCM @ 16kHz)
+            this.queueAudio(event.data);
+          }
         };
 
         this.ws.onerror = (error) => {
@@ -151,18 +180,7 @@ export class DeepgramVoiceAgent {
   }
 
   disconnect() {
-    if (this.processor) {
-      try {
-        this.processor.disconnect();
-      } catch (e) {}
-      this.processor = null;
-    }
-
-    if (this.mediaStream) {
-      this.mediaStream.getTracks().forEach(track => track.stop());
-      this.mediaStream = null;
-    }
-
+    this.teardownMic();
     this.stopPlayback();
     if (this.ws) {
       this.ws.close(1000, 'Client disconnected');
@@ -201,28 +219,18 @@ export class DeepgramVoiceAgent {
     }
 
     if (!this.sessionReady) {
-      console.log('Deepgram Agent: Waiting for session ready, queuing start...');
+      console.log('Deepgram Agent: Waiting for SettingsApplied, queuing start...');
       this.pendingStartConversation = true;
       return true;
     }
 
-    return this.sendStartConversation();
+    return this.beginMicStreaming();
   }
 
-  async sendStartConversation() {
+  async beginMicStreaming() {
     try {
       await this.setupAudio();
-      
-      console.log('Deepgram Agent: Sending StartConversation...');
-      this.ws.send(JSON.stringify({
-        type: 'StartConversation',
-        audio: {
-          encoding: 'linear16',
-          sample_rate: 16000,
-          layout: 'mono'
-        }
-      }));
-
+      console.log('Deepgram Agent: Mic streaming started');
       this.isConversationActive = true;
       return true;
     } catch (error) {
@@ -233,12 +241,13 @@ export class DeepgramVoiceAgent {
   }
 
   stopConversation() {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({
-        type: 'StopConversation'
-      }));
-    }
+    this.teardownMic();
+    this.isConversationActive = false;
+    this.isListening = false;
+    this.onListeningChanged(false);
+  }
 
+  teardownMic() {
     if (this.processor) {
       try {
         this.processor.disconnect();
@@ -250,16 +259,20 @@ export class DeepgramVoiceAgent {
       this.mediaStream.getTracks().forEach(track => track.stop());
       this.mediaStream = null;
     }
-
-    this.isConversationActive = false;
-    this.isListening = false;
-    this.onListeningChanged(false);
   }
 
   async setupAudio() {
     try {
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      
+      // Force 16kHz so the PCM we ship matches audio.input.sample_rate.
+      // (A default-rate context would send 44.1/48kHz audio mislabeled as
+      // 16kHz → upstream hears slowed-down speech.)
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      try {
+        this.audioContext = new AudioCtx({ sampleRate: 16000 });
+      } catch (e) {
+        this.audioContext = new AudioCtx();
+      }
+
       this.mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -271,11 +284,11 @@ export class DeepgramVoiceAgent {
 
       const source = this.audioContext.createMediaStreamSource(this.mediaStream);
       this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
-      
+
       this.processor.onaudioprocess = (event) => {
         if (this.isConversationActive && this.ws && this.ws.readyState === WebSocket.OPEN) {
           const inputData = event.inputBuffer.getChannelData(0);
-          
+
           // Calculate volume (RMS)
           let sum = 0;
           for (let i = 0; i < inputData.length; i++) {
@@ -301,9 +314,13 @@ export class DeepgramVoiceAgent {
   }
 
   convertFloatTo16BitPCM(inputArray) {
-    const outputArray = new Int16Array(inputArray.length);
-    for (let i = 0; i < inputArray.length; i++) {
-      const s = Math.max(-1, Math.min(1, inputArray[i]));
+    // Resample (nearest-neighbor) if the context refused 16kHz
+    const ratio = this.audioContext ? this.audioContext.sampleRate / 16000 : 1;
+    const outLen = ratio > 1 ? Math.floor(inputArray.length / ratio) : inputArray.length;
+    const outputArray = new Int16Array(outLen);
+    for (let i = 0; i < outLen; i++) {
+      const idx = ratio > 1 ? Math.floor(i * ratio) : i;
+      const s = Math.max(-1, Math.min(1, inputArray[idx]));
       outputArray[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
     }
     return outputArray;
@@ -311,12 +328,15 @@ export class DeepgramVoiceAgent {
 
   handleMessage(data) {
     try {
-      const message = typeof data === 'string' ? JSON.parse(data) : data;
-      console.log('Deepgram Agent: Received message type:', message.type);
-      
+      const message = JSON.parse(data);
+
       switch (message.type) {
         case 'Welcome':
-          console.log('Deepgram Agent: Session ready');
+          console.log('Deepgram Agent: Session open, waiting for SettingsApplied');
+          break;
+
+        case 'SettingsApplied':
+          console.log('Deepgram Agent: Settings applied, session ready');
           this.sessionReady = true;
           this.isConnected = true;
           this.startKeepalive();
@@ -328,63 +348,42 @@ export class DeepgramVoiceAgent {
           this.onConnected();
           if (this.pendingStartConversation) {
             this.pendingStartConversation = false;
-            this.sendStartConversation();
+            this.beginMicStreaming();
           }
           break;
-          
-        case 'Transcript':
-          if (message.transcript) {
-            const isFinal = message.is_final;
-            this.onTranscript(message.transcript, isFinal);
-            
-            if (isFinal) {
-              this.onListeningChanged(false);
-              this.isListening = false;
-            } else {
-              this.onListeningChanged(true);
-              this.isListening = true;
-            }
+
+        case 'ConversationText':
+          // { role: 'user' | 'assistant', content: string }
+          if (message.role === 'user') {
+            this.isListening = false;
+            this.onListeningChanged(false);
+            this.onTranscript(message.content || '', true);
+          } else if (message.role === 'assistant') {
+            this.onAgentResponse(message.content || '');
           }
           break;
-          
-        case 'Audio':
-          if (message.data) {
-            this.queueAudio(message.data);
-          }
-          break;
-          
-        case 'SpeakingStarted':
-          // Stop playing if user starts speaking (interruption/barge-in)
+
+        case 'UserStartedSpeaking':
+          // Barge-in: stop agent playback locally; upstream handles the rest.
           this.stopPlayback();
-          this.isSpeaking = true;
-          this.onSpeakingChanged(true);
-          break;
-          
-        case 'SpeakingStopped':
-          this.isSpeaking = false;
-          this.onSpeakingChanged(false);
-          break;
-          
-        case 'ConversationStarted':
           this.isListening = true;
           this.onListeningChanged(true);
           break;
-          
-        case 'ConversationEnded':
-          this.isConversationActive = false;
-          this.isListening = false;
-          this.onListeningChanged(false);
+
+        case 'AgentThinking':
+        case 'AgentAudioDone':
+        case 'History':
+        case 'LatencyReport':
+          // Informational only.
           break;
-          
+
         case 'Error':
-          console.error('Deepgram Agent error:', message.description);
-          this.onError(new Error(message.description));
+          console.error('Deepgram Agent error:', message.description || message.message);
+          this.onError(new Error(message.description || message.message || 'Agent error'));
           break;
-          
+
         default:
-          if (message.content) {
-            this.onAgentResponse(message.content);
-          }
+          break;
       }
     } catch (error) {
       console.error('Failed to handle message:', error);
@@ -403,6 +402,10 @@ export class DeepgramVoiceAgent {
 
   stopPlayback() {
     this.audioQueue = [];
+    if (this.speechEndTimer) {
+      clearTimeout(this.speechEndTimer);
+      this.speechEndTimer = null;
+    }
     if (this.currentSource) {
       try {
         this.currentSource.stop();
@@ -414,16 +417,10 @@ export class DeepgramVoiceAgent {
     this.onSpeakingChanged(false);
   }
 
-  async queueAudio(audioData) {
+  queueAudio(arrayBuffer) {
     try {
-      const binaryString = atob(audioData);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      // Convert Int16 raw linear PCM samples to float samples
-      const int16Samples = new Int16Array(bytes.buffer, bytes.byteOffset, bytes.byteLength / 2);
+      // Raw linear16 PCM @ 16kHz mono → float samples for WebAudio
+      const int16Samples = new Int16Array(arrayBuffer);
       const floatSamples = new Float32Array(int16Samples.length);
       for (let i = 0; i < int16Samples.length; i++) {
         floatSamples[i] = int16Samples[i] / 32768.0;
@@ -440,15 +437,30 @@ export class DeepgramVoiceAgent {
     if (this.isPlayingAudio) return;
     if (this.audioQueue.length === 0) {
       this.isPlayingAudio = false;
-      this.isSpeaking = false;
-      this.onSpeakingChanged(false);
+      // Audio frames stream in bursts — debounce the "stopped speaking"
+      // signal so the UI doesn't flicker between frames of the same turn.
+      if (this.speechEndTimer) clearTimeout(this.speechEndTimer);
+      this.speechEndTimer = setTimeout(() => {
+        this.speechEndTimer = null;
+        if (!this.isPlayingAudio && this.audioQueue.length === 0) {
+          this.isSpeaking = false;
+          this.onSpeakingChanged(false);
+        }
+      }, 300);
       return;
+    }
+
+    if (this.speechEndTimer) {
+      clearTimeout(this.speechEndTimer);
+      this.speechEndTimer = null;
     }
 
     const floatSamples = this.audioQueue.shift();
     this.isPlayingAudio = true;
-    this.isSpeaking = true;
-    this.onSpeakingChanged(true);
+    if (!this.isSpeaking) {
+      this.isSpeaking = true;
+      this.onSpeakingChanged(true);
+    }
 
     try {
       const audioContext = this.getPlaybackContext();
@@ -487,12 +499,8 @@ export class DeepgramVoiceAgent {
   }
 
   interrupt() {
+    // Barge-in is detected upstream; locally we just stop playback.
     this.stopPlayback();
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({
-        type: 'Interrupt'
-      }));
-    }
   }
 
   setSystemPrompt(prompt) {

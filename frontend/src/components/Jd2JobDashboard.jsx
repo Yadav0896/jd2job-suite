@@ -520,9 +520,9 @@ ${targetJob.tailored_resume}`;
                               style={{ 
                                 fontSize: '0.75rem', 
                                 padding: '6px 12px', 
-                                background: 'rgba(99, 102, 241, 0.1)', 
-                                color: '#6366f1',
-                                border: '1px solid rgba(99, 102, 241, 0.2)',
+                                background: 'rgba(145, 47, 86, 0.1)', 
+                                color: '#e08aae',
+                                border: '1px solid rgba(145, 47, 86, 0.25)',
                                 borderRadius: '6px',
                                 cursor: 'pointer',
                                 fontWeight: '600',

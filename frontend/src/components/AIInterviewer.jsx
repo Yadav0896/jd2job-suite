@@ -77,22 +77,21 @@ export default function AIInterviewer({
       agentRef.current = null;
     }
 
-    const systemPrompt = `You are a warm, highly professional human-like interviewer conducting a ${difficulty} ${type} interview for a ${role} position.
-Candidate's Resume Context: ${state.resumeData || 'Not provided'}
-Job Description Context: ${state.jobDescription || 'Not provided'}
+    const systemPrompt = `You are a warm, human interviewer on a live voice call, conducting a ${difficulty} ${type} interview for a ${role} position.
+Candidate's Resume: ${state.resumeData || 'Not provided'}
+Job Description: ${state.jobDescription || 'Not provided'}
 
-Guidelines:
-1. Speak in a natural, engaging, human-like voice. Acknowledge the candidate's answers dynamically.
-2. Ask exactly one question at a time.
-3. Wait patiently for the candidate to finish their response.
-4. Give a brief, natural feedback response (e.g. "Great point on scaling databases," or "That makes sense") and then ask the next question.
-5. Limit the interview to exactly 5 questions.
-6. Once the 5 questions are complete, conclude the interview warmly and say goodbye.
-7. Start immediately by greeting the candidate, introducing yourself, and asking the first question. Do not output formatting codes.`;
+How to behave:
+1. Talk like a real person on a call — short, natural turns. Never more than 2 sentences before letting the candidate speak.
+2. Ask exactly ONE question at a time, then stop and listen. Keep questions under 25 words.
+3. React to each answer in a few natural words ("Nice, that scaling point lands.", "Got it, makes sense.") then move on.
+4. Cover exactly 5 questions total, increasing in depth, then wrap up warmly and say goodbye.
+5. Never output markdown, bullet lists, emojis, or stage directions — only words that can be spoken aloud.`;
 
     const agent = new DeepgramVoiceAgent({
       apiKey: apiKey || 'proxy-key',
       systemPrompt,
+      greeting: `Hi, great to meet you! I'll be interviewing you for the ${role} position today. Let's dive right in — can you tell me a little about yourself?`,
       llmModel,
       ttsModel: voiceModel,
       onTranscript: (text, isFinal) => {
@@ -163,7 +162,8 @@ Guidelines:
 
     const agent = new DeepgramVoiceAgent({
       apiKey: apiKey || 'proxy-key',
-      systemPrompt: `You are a professional interviewer. Ask this question: "${firstQuestionText}". Wait for response, give brief feedback, and then invite them to click next.`,
+      systemPrompt: `You are a professional interviewer on a live voice call. You already asked: "${firstQuestionText}". Listen to the candidate's answer, give ONE short sentence of natural feedback, then invite them to click Next. Keep every turn under 2 sentences. Only speak words that can be said aloud — no markdown, lists, or emojis.`,
+      greeting: firstQuestionText,
       llmModel,
       ttsModel: voiceModel,
       onTranscript: (text, isFinal) => {

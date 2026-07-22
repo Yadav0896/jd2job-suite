@@ -250,7 +250,7 @@ export default function AuthPage({ onAuthenticated }) {
                   <button type="button" onClick={() => { setMode('forgot'); setError(null); }} style={{
                     background: 'none',
                     border: 'none',
-                    color: 'var(--primary, #6366f1)',
+                    color: 'var(--primary, #e08aae)',
                     fontSize: '0.8rem',
                     cursor: 'pointer'
                   }}>
@@ -310,7 +310,7 @@ export default function AuthPage({ onAuthenticated }) {
               padding: '14px',
               borderRadius: '12px',
               border: 'none',
-              background: 'var(--accent-gradient, linear-gradient(135deg, #6366f1 0%, #a855f7 100%))',
+              background: 'var(--accent-gradient, linear-gradient(135deg, #b03a6b 0%, #912f56 100%))',
               color: '#fff',
               fontWeight: '600',
               cursor: 'pointer',
@@ -331,7 +331,7 @@ export default function AuthPage({ onAuthenticated }) {
               <button type="button" onClick={() => { setMode('signup'); setError(null); }} style={{
                 background: 'none',
                 border: 'none',
-                color: 'var(--primary, #6366f1)',
+                color: 'var(--primary, #e08aae)',
                 fontWeight: '600',
                 cursor: 'pointer',
                 padding: 0
@@ -346,7 +346,7 @@ export default function AuthPage({ onAuthenticated }) {
               <button type="button" onClick={() => { setMode('login'); setError(null); }} style={{
                 background: 'none',
                 border: 'none',
-                color: 'var(--primary, #6366f1)',
+                color: 'var(--primary, #e08aae)',
                 fontWeight: '600',
                 cursor: 'pointer',
                 padding: 0
@@ -359,7 +359,7 @@ export default function AuthPage({ onAuthenticated }) {
             <button type="button" onClick={() => { setMode('login'); setError(null); }} style={{
               background: 'none',
               border: 'none',
-              color: 'var(--primary, #6366f1)',
+              color: 'var(--primary, #e08aae)',
               fontWeight: '600',
               cursor: 'pointer',
               padding: 0

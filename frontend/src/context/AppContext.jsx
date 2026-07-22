@@ -1,8 +1,30 @@
 import { createContext, useContext, useReducer, useEffect, useRef, useCallback } from 'react';
-import { supabase, getUser } from '../services/supabaseClient';
+import { supabase, getUser, supabaseUrl, supabaseAnonKey } from '../services/supabaseClient';
 import { getProfile } from '../services/supabaseService';
 
 const AppContext = createContext(null);
+
+// Publish the auth session for the browser extension (content-portal.js reads
+// this key to connect the extension to the user's Jd2Job account).
+function syncExtensionAuth(session) {
+  try {
+    if (session?.access_token && session?.user?.id) {
+      localStorage.setItem('jd2job_extension_auth', JSON.stringify({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token || null,
+        expires_at: session.expires_at || 0,
+        supabaseUrl,
+        anonKey: supabaseAnonKey,
+        userId: session.user.id,
+        email: session.user.email || null,
+      }));
+    } else {
+      localStorage.removeItem('jd2job_extension_auth');
+    }
+  } catch {
+    // localStorage unavailable (private mode etc.) — extension pairing just won't work
+  }
+}
 
 const initialState = {
   // ── Auth ──
@@ -383,22 +405,13 @@ function appReducer(state, action) {
     case 'SET_AUTH':
       if (action.payload.user?.id) {
         localStorage.setItem('jd2job_user_id', action.payload.user.id);
-        fetch('http://localhost:3001/api/jd2job/local-session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: action.payload.user.id })
-        }).catch(() => {});
       }
       return { ...state, isAuthenticated: true, authLoading: false, user: action.payload.user, profile: action.payload.profile };
     case 'SET_AUTH_LOADING':
       return { ...state, authLoading: action.payload };
     case 'CLEAR_AUTH':
       localStorage.removeItem('jd2job_user_id');
-      fetch('http://localhost:3001/api/jd2job/local-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: null })
-      }).catch(() => {});
+      syncExtensionAuth(null);
       return { ...state, isAuthenticated: false, user: null, profile: null, authLoading: false };
     case 'SET_PROFILE':
       return { ...state, profile: action.payload };
@@ -446,6 +459,12 @@ export function AppProvider({ children }) {
             profile = await Promise.race([profilePromise, timeoutPromise]).catch(() => null);
           } catch {}
 
+          // Publish session for the browser extension pairing
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            syncExtensionAuth(session);
+          } catch {}
+
           dispatch({
             type: 'SET_AUTH',
             payload: { user, profile }
@@ -465,6 +484,7 @@ export function AppProvider({ children }) {
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log(`[Auth] Auth state change event fired: ${event}`);
+      syncExtensionAuth(session);
       if (session?.user) {
         // Dispatch auth immediately so UI doesn't hang waiting for DB
         dispatch({ type: 'SET_AUTH', payload: { user: session.user, profile: null } });

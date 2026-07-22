@@ -48,13 +48,13 @@ export default function ModelSelector() {
         .model-select-dropdown:hover {
           background: rgba(255, 255, 255, 0.15);
           border-color: rgba(255, 255, 255, 0.25);
-          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15), 0 0 0 2px rgba(99, 102, 241, 0.2);
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15), 0 0 0 2px rgba(145, 47, 86, 0.25);
           transform: translateY(-1px);
         }
 
         .model-select-dropdown:focus {
-          border-color: #6366f1;
-          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+          border-color: #912f56;
+          box-shadow: 0 0 0 3px rgba(145, 47, 86, 0.3);
         }
 
         .model-select-dropdown option {

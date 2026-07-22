@@ -3,22 +3,28 @@
 /* ─── DARK THEME (OBSIDIAN GLOW) ────────────────────────────────────────────── */
 :root,
 [data-theme="dark"] {
+  /* Brand tokens */
+  --berry: #912f56;
+  --berry-700: #6e2341;
+  --berry-300: #e08aae;
+  --twilight: #eaf2ef;
+
   /* Holographic color palette */
-  --holo-primary: #6366f1; /* Indigo */
-  --holo-secondary: #a855f7; /* Purple */
-  --holo-accent: #10b981; /* Emerald */
+  --holo-primary: #e08aae; /* Berry 300 */
+  --holo-secondary: #912f56; /* Berry */
+  --holo-accent: #9fc7b8; /* Twilight mint */
   --holo-purple: #8b5cf6;
   --holo-pink: #ec4899;
   --holo-cyan: #06b6d4;
-  
+
   /* Dark base */
-  --bg-primary: #06070a; /* True Obsidian deep dark */
-  --bg-secondary: #0b0d13;
-  --bg-surface: rgba(15, 18, 26, 0.6);
-  --bg-card: rgba(22, 28, 41, 0.55);
-  --bg-elevated: rgba(30, 38, 56, 0.7);
-  --bg-input: #0f131a;
-  --bg-hover: rgba(99, 102, 241, 0.08);
+  --bg-primary: #100c16; /* Brand ink */
+  --bg-secondary: #1a1422;
+  --bg-surface: rgba(26, 20, 34, 0.6);
+  --bg-card: rgba(34, 26, 44, 0.55);
+  --bg-elevated: rgba(44, 33, 57, 0.7);
+  --bg-input: #171221;
+  --bg-hover: rgba(145, 47, 86, 0.12);
   
   /* Text */
   --text-primary: #f8fafc;
@@ -31,9 +37,9 @@
   --glass-border: rgba(255, 255, 255, 0.08);
   
   /* Accent */
-  --accent: #10b981;
-  --accent-light: rgba(16, 185, 129, 0.1);
-  --accent-hover: #059669;
+  --accent: #e08aae;
+  --accent-light: rgba(224, 138, 174, 0.12);
+  --accent-hover: #b03a6b;
   
   /* Semantic colors */
   --success: #10b981;
@@ -44,7 +50,7 @@
   --error-light: rgba(239, 68, 68, 0.12);
   
   /* Speaker colors */
-  --speaker-you: #10b981;
+  --speaker-you: #e08aae;
   --speaker-ivr: #8b5cf6;
   --speaker-screen: #3b82f6;
   --speaker-copilot: #f59e0b;
@@ -53,7 +59,7 @@
   --border: rgba(255, 255, 255, 0.06);
   --border-light: rgba(255, 255, 255, 0.03);
   --border-medium: rgba(255, 255, 255, 0.12);
-  --border-focus: #10b981;
+  --border-focus: #e08aae;
   
   /* Shadows with elegant minimal look */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
@@ -78,13 +84,13 @@
 /* ─── LIGHT THEME (ELEVATED MINIMAL) ─────────────────────────────────────────── */
 [data-theme="light"] {
   /* Light base */
-  --bg-primary: #f8fafc;
-  --bg-secondary: #f1f5f9;
+  --bg-primary: #faf8f4;
+  --bg-secondary: #f1f7f4;
   --bg-surface: rgba(255, 255, 255, 0.8);
   --bg-card: rgba(255, 255, 255, 0.95);
   --bg-elevated: #ffffff;
-  --bg-input: #f1f5f9;
-  --bg-hover: rgba(99, 102, 241, 0.05);
+  --bg-input: #f1f7f4;
+  --bg-hover: rgba(145, 47, 86, 0.05);
   
   /* Text */
   --text-primary: #0f172a;
@@ -94,12 +100,12 @@
   
   /* Glass colors */
   --glass-bg: rgba(255, 255, 255, 0.8);
-  --glass-border: rgba(99, 102, 241, 0.08);
+  --glass-border: rgba(145, 47, 86, 0.08);
   
   /* Accent */
-  --accent: #4f46e5;
-  --accent-light: rgba(79, 70, 229, 0.08);
-  --accent-hover: #4338ca;
+  --accent: #912f56;
+  --accent-light: rgba(145, 47, 86, 0.08);
+  --accent-hover: #6e2341;
   
   /* Semantic colors */
   --success: #0f766e;
@@ -110,7 +116,7 @@
   --error-light: #fef2f2;
   
   /* Speaker colors */
-  --speaker-you: #4f46e5;
+  --speaker-you: #912f56;
   --speaker-ivr: #7c3aed;
   --speaker-screen: #0f766e;
   --speaker-copilot: #ea580c;
@@ -119,7 +125,7 @@
   --border: rgba(15, 23, 42, 0.08);
   --border-light: rgba(15, 23, 42, 0.04);
   --border-medium: rgba(15, 23, 42, 0.15);
-  --border-focus: #4f46e5;
+  --border-focus: #912f56;
   
   /* Shadows */
   --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.03);
@@ -128,9 +134,9 @@
   --shadow-lg: 0 16px 24px rgba(15, 23, 42, 0.08);
   --shadow-xl: 0 24px 32px rgba(15, 23, 42, 0.1);
   --shadow-card: 0 2px 12px rgba(15, 23, 42, 0.04), 0 0 1px rgba(15, 23, 42, 0.08);
-  --glow-sm: 0 0 8px rgba(79, 70, 229, 0.1);
-  --glow-md: 0 0 16px rgba(79, 70, 229, 0.15);
-  --glow-lg: 0 0 24px rgba(79, 70, 229, 0.2);
+  --glow-sm: 0 0 8px rgba(145, 47, 86, 0.1);
+  --glow-md: 0 0 16px rgba(145, 47, 86, 0.15);
+  --glow-lg: 0 0 24px rgba(145, 47, 86, 0.2);
 }
 
 /* ─── MODE-SPECIFIC ACCENT OVERRIDES ───────────────────────────────────────── */
@@ -226,7 +232,7 @@ body.electron-mode:has(.stealth-layout-active) .interviewer-preview-container {
 }
 
 body {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Geist', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
   font-size: 14px;
@@ -1728,7 +1734,7 @@ body {
 /* ─── DEMO PLAY BUTTON ──────────────────────────────────────────────────────── */
 .demo-play-btn {
   padding: 7px 14px;
-  background: linear-gradient(135deg, #a855f7, #6366f1);
+  background: linear-gradient(135deg, #b03a6b, #912f56);
   color: white;
   border: none;
   border-radius: var(--radius-sm);
@@ -1793,7 +1799,7 @@ body {
 
 /* ─── DEMO BANNER ───────────────────────────────────────────────────────────── */
 .demo-banner {
-  background: linear-gradient(90deg, #a855f7, #6366f1, #06b6d4);
+  background: linear-gradient(90deg, #e08aae, #912f56, #6e2341);
   background-size: 200% 100%;
   animation: bannerGradient 4s ease infinite;
   color: white;
@@ -3083,7 +3089,7 @@ select.api-key-input {
 }
 
 .ws-hero-gradient {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6, #10b981);
+  background: linear-gradient(135deg, #e08aae, #912f56, #6e2341);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -3407,12 +3413,12 @@ select.api-key-input {
   align-items: center;
   gap: 7px;
   padding: 5px 16px;
-  background: linear-gradient(135deg, rgba(99,102,241,0.10), rgba(139,92,246,0.10));
-  border: 1px solid rgba(99,102,241,0.18);
+  background: linear-gradient(135deg, rgba(145,47,86,0.10), rgba(224,138,174,0.10));
+  border: 1px solid rgba(145,47,86,0.22);
   border-radius: 100px;
   font-size: 0.8125rem;
   font-weight: 700;
-  color: #4f46e5;
+  color: var(--accent);
 }
 
 /* ── Hero ───────────────────────────────────────────────────── */
@@ -3454,7 +3460,7 @@ select.api-key-input {
 [data-theme="dark"] .wsp-h1 { color: #f5f5f8; }
 
 .wsp-h1-grad {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #10b981 100%);
+  background: linear-gradient(135deg, #e08aae 0%, #912f56 50%, #6e2341 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -3750,7 +3756,7 @@ select.api-key-input {
 .auth-blob-tl {
   width: 600px; height: 600px;
   top: -200px; left: -200px;
-  background: radial-gradient(circle, #6366f1 0%, transparent 70%);
+  background: radial-gradient(circle, #912f56 0%, transparent 70%);
 }
 .auth-blob-br {
   width: 500px; height: 500px;
@@ -3792,9 +3798,9 @@ select.api-key-input {
   color: #f44336; font-size: 0.75rem; margin-bottom: 16px;
 }
 .auth-error.auth-info {
-  background: rgba(99, 102, 241, 0.12);
-  border-color: rgba(99, 102, 241, 0.25);
-  color: #818cf8;
+  background: rgba(145, 47, 86, 0.12);
+  border-color: rgba(145, 47, 86, 0.25);
+  color: #e08aae;
 }
 
 .auth-form { display: flex; flex-direction: column; gap: 14px; }
@@ -3810,7 +3816,7 @@ select.api-key-input {
   color: #f5f5f8; font-size: 0.85rem; font-family: inherit;
   outline: none; transition: border-color 0.2s;
 }
-.auth-input:focus { border-color: #6366f1; }
+.auth-input:focus { border-color: #e08aae; }
 .auth-input::placeholder { color: #4a4a5e; }
 
 .auth-btn {
@@ -3821,12 +3827,12 @@ select.api-key-input {
 }
 .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .auth-btn-primary {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  background: linear-gradient(135deg, #b03a6b, #912f56);
   color: white; width: 100%;
 }
 .auth-btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #7175fa, #5b54f0);
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+  background: linear-gradient(135deg, #c94f7e, #a23862);
+  box-shadow: 0 4px 16px rgba(145, 47, 86, 0.35);
 }
 .auth-btn-google {
   background: rgba(255, 255, 255, 0.06); color: #c0c0d0;
@@ -3840,7 +3846,7 @@ select.api-key-input {
 
 .auth-switch { text-align: center; margin-top: 20px; font-size: 0.78rem; color: #8b8b9e; }
 .auth-switch-btn {
-  background: none; border: none; color: #6366f1;
+  background: none; border: none; color: #e08aae;
   font-weight: 600; cursor: pointer; font-size: 0.78rem;
   font-family: inherit; padding: 0;
 }
@@ -3939,9 +3945,9 @@ select.api-key-input {
 }
 
 .auth-error.auth-info {
-  background: rgba(99,102,241,0.08);
-  border-color: rgba(99,102,241,0.2);
-  color: #4f46e5;
+  background: rgba(145,47,86,0.10);
+  border-color: rgba(145,47,86,0.25);
+  color: #e08aae;
 }
 
 .auth-form {
@@ -3978,9 +3984,9 @@ select.api-key-input {
 }
 
 .auth-input:focus {
-  border-color: #818cf8;
+  border-color: #912f56;
   background: white;
-  box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.1), 0 2px 8px rgba(129, 140, 248, 0.08);
+  box-shadow: 0 0 0 4px rgba(145, 47, 86, 0.1), 0 2px 8px rgba(145, 47, 86, 0.08);
 }
 
 .auth-input::placeholder {
@@ -4009,9 +4015,9 @@ select.api-key-input {
 }
 
 .auth-btn-primary {
-  background: linear-gradient(135deg, #818cf8, #6366f1);
+  background: linear-gradient(135deg, #b03a6b, #912f56);
   color: white;
-  box-shadow: 0 4px 16px rgba(129, 102, 241, 0.3);
+  box-shadow: 0 4px 16px rgba(145, 47, 86, 0.3);
   letter-spacing: -0.01em;
 }
 
@@ -4067,7 +4073,7 @@ select.api-key-input {
 .auth-switch-btn {
   background: none;
   border: none;
-  color: #818cf8;
+  color: #912f56;
   font-weight: 700;
   cursor: pointer;
   font-size: 0.8125rem;
@@ -4078,7 +4084,7 @@ select.api-key-input {
 }
 
 .auth-switch-btn:hover {
-  color: #6366f1;
+  color: #e08aae;
   text-decoration: none;
 }
 

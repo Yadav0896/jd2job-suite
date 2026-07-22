@@ -53,7 +53,7 @@ async function handleChatRoute(req) {
       if (model && model.includes('8b')) {
         groqModel = 'llama-3.1-8b-instant';
       } else if (model && model.includes('mixtral')) {
-        groqModel = 'mixtral-8x7b-32768';
+        groqModel = 'llama-3.3-70b-versatile'; // mixtral-8x7b was decommissioned on Groq
       }
 
       console.log(`[ModelProvider] Routing to Groq (${groqModel}) for speed & reliability`);

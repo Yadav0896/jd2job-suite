@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "npm --prefix backend run dev & npm --prefix frontend run dev",
-    "test": "node test-appcontext.js",
+    "test": "node backend/tests/test-appcontext.js",
     "electron:dev": "npm --prefix frontend run electron:dev",
     "electron:build": "npm --prefix frontend run electron:build",
     "electron:start": "npm --prefix frontend run electron:start"

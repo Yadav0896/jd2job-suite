@@ -5,6 +5,8 @@
  * Always using 16 kHz eliminates any AudioContext sample-rate ambiguity.
  */
 
+import { getSession } from './supabaseClient';
+
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const DEEPGRAM_WS    = API_BASE.replace(/^http/, 'ws') + '/api/deepgram';
 const TARGET_SR      = 16000;
@@ -41,7 +43,15 @@ export class DeepgramTranscriber {
     await this._connect();
   }
 
-  _connect() {
+  async _connect() {
+    const session = await getSession();
+    const token = session?.access_token;
+    if (!token) {
+      const msg = 'Not authenticated — please sign in to use voice transcription.';
+      this.onError?.(msg);
+      throw new Error(msg);
+    }
+
     return new Promise((resolve, reject) => {
       const params = new URLSearchParams({
         model:           'nova-2',
@@ -55,6 +65,7 @@ export class DeepgramTranscriber {
         channels:        '1',
         keepalive:       'true',
         diarize:         this.forceSpeakerLabel ? 'false' : 'true',
+        token,
       });
 
       console.log(`[Deepgram] Connecting to ${DEEPGRAM_WS}?${params}`);
