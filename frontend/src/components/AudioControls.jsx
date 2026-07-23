@@ -222,8 +222,12 @@ export default function AudioControls() {
 
         ctx.fillStyle = gradient;
         ctx.beginPath();
-        // Support rounded visualizer bars (CSS-like rounded rect)
-        ctx.roundRect(x, y, barWidth, barHeight, 1.5);
+        // Support rounded visualizer bars with fallback for older browsers
+        if (typeof ctx.roundRect === 'function') {
+          ctx.roundRect(x, y, barWidth, barHeight, 1.5);
+        } else {
+          ctx.rect(x, y, barWidth, barHeight);
+        }
         ctx.fill();
       }
       
@@ -361,6 +365,7 @@ export default function AudioControls() {
         abortSignal: combinedSignal,
         tonePreference: state.tonePreference,
         companyEnrichment: state.companyEnrichment,
+        assignmentDocs: state.assignmentDocs,
       });
 
       let lastDispatchTime = 0;
@@ -494,7 +499,13 @@ export default function AudioControls() {
         abortControllerRef.current = null;
       }
     }
-  }, [dispatch, backendStatus]);
+  }, [dispatch, backendStatus,
+      platformMode, salesConfig, meetingConfig,
+      state.salesState, state.meetingState, state.speedMode, state.answerMode,
+      state.llmProvider, state.llmModel, state.selectedModel,
+      state.tonePreference, state.companyEnrichment, state.customPrompt,
+      state.assignmentDocs,
+  ]);
 
   // Listener for Manual Trigger (button click from AnswerPanel)
   useEffect(() => {

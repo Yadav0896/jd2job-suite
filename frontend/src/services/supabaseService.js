@@ -33,28 +33,32 @@ export async function createSession({ userId, platformMode, resumeData, jobDescr
 
 /**
  * End a session (mark as completed).
+ * NOTE: duration_secs is computed by a database trigger on UPDATE.
+ * Add this trigger in your Supabase SQL editor:
+ *   CREATE OR REPLACE FUNCTION calc_session_duration()
+ *   RETURNS trigger AS $$ BEGIN
+ *     IF NEW.ended_at IS NOT NULL AND OLD.started_at IS NOT NULL THEN
+ *       NEW.duration_secs := EXTRACT(EPOCH FROM (NEW.ended_at::timestamp - OLD.started_at::timestamp));
+ *     END IF;
+ *     RETURN NEW;
+ *   END; $$ LANGUAGE plpgsql;
+ *   CREATE TRIGGER trg_session_duration BEFORE UPDATE ON sessions
+ *     FOR EACH ROW EXECUTE FUNCTION calc_session_duration();
  */
 export async function endSession(sessionId) {
+  const endedAt = new Date().toISOString();
   const { data, error } = await supabase
     .from('sessions')
     .update({
       status: 'completed',
-      ended_at: new Date().toISOString(),
-      duration_secs: supabase.rpc('calculate_duration', { session_id: sessionId }),
+      ended_at: endedAt,
     })
     .eq('id', sessionId)
     .select()
     .single();
 
-  // Silently ignore RPC failures for duration — optional
-  if (error) {
-    // Fallback: update without duration calc
-    return supabase
-      .from('sessions')
-      .update({ status: 'completed', ended_at: new Date().toISOString() })
-      .eq('id', sessionId);
-  }
-  return { data, error };
+  if (error) throw error;
+  return data;
 }
 
 /**
@@ -330,6 +334,7 @@ export async function saveMyCompany(userId, { name, industry, url, product }) {
 
 /**
  * Deduct credits from user profile, taking unlimited plans into account.
+ * Uses an atomic conditional update to prevent TOCTOU double-spend.
  */
 export async function deductCredits(userId, amount = 1) {
   const { data, error } = await supabase
@@ -353,7 +358,18 @@ export async function deductCredits(userId, amount = 1) {
     throw new Error('Insufficient credits');
   }
 
-  return updateProfile(userId, { credits: data.credits - amount });
+  // Atomic decrement: only update if credits still >= amount (prevents race)
+  const { data: updated, error: updateError } = await supabase
+    .from('profiles')
+    .update({ credits: data.credits - amount, updated_at: now })
+    .eq('id', userId)
+    .gte('credits', amount)
+    .select()
+    .single();
+
+  if (updateError) throw updateError;
+  if (!updated) throw new Error('Credit already consumed. Please try again.');
+  return updated;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

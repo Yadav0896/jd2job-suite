@@ -73,6 +73,7 @@ const initialState = {
   isReadingScreen: false,
   jobDescription: null,
   showJobDescriptionModal: false,
+  showAssignmentModal: false,
   isGhostMode: false,
   technicalKeywords: [],
   wpm: 0,
@@ -100,6 +101,7 @@ const initialState = {
   theme: (typeof window !== 'undefined' && localStorage.getItem('theme')) || 'dark',
   tonePreference: (typeof window !== 'undefined' && localStorage.getItem('tonePreference')) || 'confident', // 'confident' | 'technical' | 'concise'
   resumes: [], // Array of { id, title, content, active }
+  assignmentDocs: [], // Array of { id, name, content } (uploaded assignments, max 3)
   companyEnrichment: null, // enriched company context object
   customTriggerQuestion: null,
   speedMode: typeof window !== 'undefined' && localStorage.getItem('speedMode') !== null ? localStorage.getItem('speedMode') === 'true' : true, // Speed-first mode
@@ -207,6 +209,8 @@ function appReducer(state, action) {
       return { ...state, showResumeModal: !state.showResumeModal };
     case 'TOGGLE_JOB_DESCRIPTION_MODAL':
       return { ...state, showJobDescriptionModal: !state.showJobDescriptionModal };
+    case 'TOGGLE_ASSIGNMENT_MODAL':
+      return { ...state, showAssignmentModal: !state.showAssignmentModal };
     case 'TOGGLE_SETTINGS_MODAL':
       return { ...state, showSettingsModal: !state.showSettingsModal };
     case 'SET_PIP_WINDOW':
@@ -386,6 +390,25 @@ function appReducer(state, action) {
       return { ...state, tonePreference: action.payload };
     case 'SET_COMPANY_ENRICHMENT':
       return { ...state, companyEnrichment: action.payload };
+    case 'ADD_ASSIGNMENT_DOC': {
+      const existingDocs = state.assignmentDocs || [];
+      if (existingDocs.length >= 3) return state; // max 3 assignments
+      return {
+        ...state,
+        assignmentDocs: [...existingDocs, {
+          id: Date.now().toString(),
+          name: action.payload.name || 'Assignment',
+          content: action.payload.content || '',
+        }],
+      };
+    }
+    case 'REMOVE_ASSIGNMENT_DOC':
+      return {
+        ...state,
+        assignmentDocs: (state.assignmentDocs || []).filter(d => d.id !== action.payload),
+      };
+    case 'CLEAR_ASSIGNMENT_DOCS':
+      return { ...state, assignmentDocs: [] };
     case 'SET_RESUMES':
       return { ...state, resumes: action.payload };
     case 'SET_ACTIVE_RESUME': {

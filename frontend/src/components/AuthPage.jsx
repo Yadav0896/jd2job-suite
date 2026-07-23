@@ -13,7 +13,7 @@ export default function AuthPage({ onAuthenticated }) {
     localStorage.setItem('referred_by', refParam);
   }
 
-  const [mode, setMode] = useState(isRecoveryMode ? 'reset' : 'login'); // 'login' | 'signup' | 'forgot' | 'reset'
+  const [mode, setMode] = useState(isRecoveryMode ? 'reset' : 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -43,17 +43,14 @@ export default function AuthPage({ onAuthenticated }) {
     setLoading(true);
     setError(null);
     setSuccessMsg(null);
-    console.log(`[Auth] Starting auth action. Mode: ${mode}, Email: ${email}`);
 
     try {
       if (mode === 'signup') {
         const refId = localStorage.getItem('referred_by') || undefined;
-        console.log('[Auth] Calling signUp...');
         const { data, error: signUpError } = await signUp(email, password, { 
           name, 
           referred_by: refId 
         });
-        console.log('[Auth] signUp response received:', { data, error: signUpError });
         if (signUpError) {
           if (signUpError.message?.includes('already registered')) {
             setError('Account exists. Please sign in.');
@@ -66,32 +63,23 @@ export default function AuthPage({ onAuthenticated }) {
           setMode('login');
         }
       } else if (mode === 'forgot') {
-        console.log('[Auth] Calling resetPasswordForEmail...');
         const { error: resetError } = await resetPasswordForEmail(email);
-        console.log('[Auth] resetPasswordForEmail response:', { error: resetError });
         if (resetError) throw resetError;
         setSuccessMsg('Password reset link sent! Check your inbox.');
       } else if (mode === 'reset') {
-        console.log('[Auth] Calling updateUserPassword...');
         const { error: updateError } = await updateUserPassword(newPassword);
-        console.log('[Auth] updateUserPassword response:', { error: updateError });
         if (updateError) throw updateError;
         setSuccessMsg('Password updated! You can now log in.');
         setMode('login');
         window.history.replaceState({}, document.title, window.location.pathname);
       } else {
-        console.log('[Auth] Calling signIn...');
         const { data, error: signInError } = await signIn(email, password);
-        console.log('[Auth] signIn response received:', { data, error: signInError });
         if (signInError) throw signInError;
-        console.log('[Auth] signIn success, triggering onAuthenticated callback.');
         onAuthenticated();
       }
     } catch (err) {
-      console.error('[Auth] Error caught in handleSubmit:', err);
       setError(err.message || 'Authentication failed');
     } finally {
-      console.log('[Auth] Finished handleSubmit. Setting loading to false.');
       setLoading(false);
     }
   };
@@ -111,264 +99,296 @@ export default function AuthPage({ onAuthenticated }) {
   };
 
   return (
-    <div className="auth-root" style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      background: 'radial-gradient(circle at 10% 20%, rgb(18, 18, 24) 0%, rgb(9, 9, 12) 90.2%)',
-      padding: '24px'
-    }}>
-      {/* Background blobs */}
-      <div className="auth-blob auth-blob-tl" style={{
-        position: 'absolute',
-        width: '300px',
-        height: '300px',
-        background: 'rgba(99, 102, 241, 0.15)',
-        filter: 'blur(80px)',
-        top: '10%',
-        left: '10%',
-        borderRadius: '50%'
-      }} />
-      <div className="auth-blob auth-blob-br" style={{
-        position: 'absolute',
-        width: '350px',
-        height: '350px',
-        background: 'rgba(236, 72, 153, 0.1)',
-        filter: 'blur(100px)',
-        bottom: '10%',
-        right: '10%',
-        borderRadius: '50%'
-      }} />
+    <div className="auth-root">
+      <div className="auth-bg-grain" />
+      <div className="auth-blob auth-blob-tl" />
+      <div className="auth-blob auth-blob-br" />
+      <div className="auth-blob auth-blob-cr" />
 
-      <div className="auth-card" style={{
-        background: 'rgba(255, 255, 255, 0.03)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        backdropFilter: 'blur(20px)',
-        borderRadius: '24px',
-        padding: '40px',
-        width: '100%',
-        maxWidth: '440px',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
-        textAlign: 'center',
-        position: 'relative',
-        zIndex: 1
-      }}>
-        <div className="auth-logo" style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
-          <Jd2JobLogo width={64} height={64} />
+      <div className="auth-card">
+        <a href="/" className="auth-back-link" aria-label="Back to home">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5m6-6l-6 6 6 6" />
+          </svg>
+          <span>Back</span>
+        </a>
+
+        <div className="auth-logo">
+          <Jd2JobLogo width={56} height={56} />
         </div>
-        <h1 className="auth-title" style={{ fontSize: '2rem', fontWeight: '800', color: '#fff', marginBottom: '8px' }}>Jd2Job</h1>
-        <p className="auth-subtitle" style={{ color: 'var(--text-secondary, #94a3b8)', marginBottom: '32px' }}>
+        <h1 className="auth-title">Jd2Job</h1>
+        <p className="auth-subtitle">
           {mode === 'login' && 'Sign in to access your dashboard'}
           {mode === 'signup' && 'Create your account to get started'}
           {mode === 'forgot' && 'Reset your password'}
           {mode === 'reset' && 'Create a new secure password'}
         </p>
 
-        {/* Messages */}
-        {error && (
-          <div className="auth-error" style={{
-            background: 'rgba(239, 68, 68, 0.15)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            color: '#ef4444',
-            padding: '12px 16px',
-            borderRadius: '12px',
-            marginBottom: '24px',
-            fontSize: '0.85rem'
-          }}>
-            {error}
-          </div>
-        )}
+        {error && <div className="auth-alert auth-alert-error">{error}</div>}
+        {successMsg && <div className="auth-alert auth-alert-success">{successMsg}</div>}
 
-        {successMsg && (
-          <div className="auth-success" style={{
-            background: 'rgba(34, 197, 94, 0.15)',
-            border: '1px solid rgba(34, 197, 94, 0.3)',
-            color: '#22c55e',
-            padding: '12px 16px',
-            borderRadius: '12px',
-            marginBottom: '24px',
-            fontSize: '0.85rem'
-          }}>
-            {successMsg}
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="auth-form" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <form onSubmit={handleSubmit} className="auth-form">
           {mode === 'signup' && (
-            <div className="auth-field" style={{ textAlign: 'left' }}>
-              <label className="auth-label" style={{ color: '#fff', fontSize: '0.85rem', marginBottom: '6px', display: 'block' }}>Name</label>
+            <div className="auth-field">
+              <label className="auth-label">Full name</label>
               <input
                 type="text"
-                className="auth-input"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="Your name"
                 required
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  background: 'rgba(255,255,255,0.05)',
-                  color: '#fff',
-                  outline: 'none'
-                }}
+                autoComplete="name"
               />
             </div>
           )}
 
           {mode !== 'reset' && (
-            <div className="auth-field" style={{ textAlign: 'left' }}>
-              <label className="auth-label" style={{ color: '#fff', fontSize: '0.85rem', marginBottom: '6px', display: 'block' }}>Email</label>
+            <div className="auth-field">
+              <label className="auth-label">Email address</label>
               <input
                 type="email"
-                className="auth-input"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="you@email.com"
                 required
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  background: 'rgba(255,255,255,0.05)',
-                  color: '#fff',
-                  outline: 'none'
-                }}
+                autoComplete="email"
               />
             </div>
           )}
 
           {mode !== 'forgot' && mode !== 'reset' && (
-            <div className="auth-field" style={{ textAlign: 'left' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <label className="auth-label" style={{ color: '#fff', fontSize: '0.85rem', display: 'block' }}>Password</label>
+            <div className="auth-field">
+              <div className="auth-field-head">
+                <label className="auth-label">Password</label>
                 {mode === 'login' && (
-                  <button type="button" onClick={() => { setMode('forgot'); setError(null); }} style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--primary, #e08aae)',
-                    fontSize: '0.8rem',
-                    cursor: 'pointer'
-                  }}>
+                  <button type="button" onClick={() => { setMode('forgot'); setError(null); }} className="auth-link">
                     Forgot password?
                   </button>
                 )}
               </div>
               <input
                 type="password"
-                className="auth-input"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  background: 'rgba(255,255,255,0.05)',
-                  color: '#fff',
-                  outline: 'none'
-                }}
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               />
             </div>
           )}
 
           {mode === 'reset' && (
-            <div className="auth-field" style={{ textAlign: 'left' }}>
-              <label className="auth-label" style={{ color: '#fff', fontSize: '0.85rem', marginBottom: '6px', display: 'block' }}>New Password</label>
+            <div className="auth-field">
+              <label className="auth-label">New password</label>
               <input
                 type="password"
-                className="auth-input"
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="At least 6 characters"
                 required
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  background: 'rgba(255,255,255,0.05)',
-                  color: '#fff',
-                  outline: 'none'
-                }}
+                autoComplete="new-password"
               />
             </div>
           )}
 
-          <button
-            type="submit"
-            className="auth-btn auth-btn-primary"
-            disabled={loading}
-            style={{
-              width: '100%',
-              padding: '14px',
-              borderRadius: '12px',
-              border: 'none',
-              background: 'var(--accent-gradient, linear-gradient(135deg, #b03a6b 0%, #912f56 100%))',
-              color: '#fff',
-              fontWeight: '600',
-              cursor: 'pointer',
-              marginTop: '10px'
-            }}
-          >
+          <button type="submit" className="auth-btn" disabled={loading}>
             {loading ? 'Please wait…' : mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : mode === 'forgot' ? 'Send Reset Link' : 'Update Password'}
           </button>
         </form>
 
+        <div className="auth-divider">
+          <span>or</span>
+        </div>
 
+        <button type="button" onClick={handleGoogle} className="auth-btn auth-btn-outline" disabled={loading}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          Continue with Google
+        </button>
 
-        {/* Switch mode */}
-        <p className="auth-switch" style={{ marginTop: '32px', fontSize: '0.85rem', color: '#64748b' }}>
+        <p className="auth-switch">
           {mode === 'login' && (
-            <>
-              Don't have an account?{' '}
-              <button type="button" onClick={() => { setMode('signup'); setError(null); }} style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--primary, #e08aae)',
-                fontWeight: '600',
-                cursor: 'pointer',
-                padding: 0
-              }}>
-                Sign up
-              </button>
-            </>
+            <>Don&apos;t have an account? {' '}<button type="button" onClick={() => { setMode('signup'); setError(null); }}>Sign up</button></>
           )}
           {mode === 'signup' && (
-            <>
-              Already have an account?{' '}
-              <button type="button" onClick={() => { setMode('login'); setError(null); }} style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--primary, #e08aae)',
-                fontWeight: '600',
-                cursor: 'pointer',
-                padding: 0
-              }}>
-                Sign in
-              </button>
-            </>
+            <>Already have an account? {' '}<button type="button" onClick={() => { setMode('login'); setError(null); }}>Sign in</button></>
           )}
           {(mode === 'forgot' || mode === 'reset') && (
-            <button type="button" onClick={() => { setMode('login'); setError(null); }} style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--primary, #e08aae)',
-              fontWeight: '600',
-              cursor: 'pointer',
-              padding: 0
-            }}>
-              Back to Sign In
-            </button>
+            <button type="button" onClick={() => { setMode('login'); setError(null); }}>← Back to sign in</button>
           )}
         </p>
       </div>
+
+      <style>{`
+        .auth-root {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 100vh;
+          background: var(--bg-primary, #100c16);
+          padding: 24px;
+          position: relative;
+          overflow: hidden;
+        }
+        .auth-bg-grain {
+          position: fixed;
+          inset: 0;
+          background-image: radial-gradient(circle at 25% 25%, var(--accent-light, rgba(224,138,174,.08)) 0%, transparent 50%);
+          pointer-events: none;
+        }
+        .auth-blob {
+          position: fixed;
+          border-radius: 50%;
+          filter: blur(90px);
+          pointer-events: none;
+          opacity: 0.5;
+        }
+        .auth-blob-tl {
+          width: 360px; height: 360px;
+          background: var(--berry, #912f56);
+          top: -5%; left: -8%;
+          opacity: 0.12;
+        }
+        .auth-blob-br {
+          width: 400px; height: 400px;
+          background: var(--holo-purple, #8b5cf6);
+          bottom: -8%; right: -10%;
+          opacity: 0.08;
+        }
+        .auth-blob-cr {
+          width: 220px; height: 220px;
+          background: var(--holo-accent, #9fc7b8);
+          top: 35%; right: 15%;
+          opacity: 0.06;
+        }
+        .auth-card {
+          background: var(--bg-card, rgba(34,26,44,.55));
+          border: 1px solid var(--glass-border, rgba(255,255,255,.08));
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          border-radius: 24px;
+          padding: 40px 36px 36px;
+          width: 100%;
+          max-width: 420px;
+          box-shadow: 0 24px 48px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.04);
+          position: relative;
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .auth-back-link {
+          position: absolute;
+          top: 20px; left: 24px;
+          display: flex; align-items: center; gap: 5px;
+          font-size: .78rem; font-weight: 600;
+          color: var(--text-muted, #94a3b8);
+          text-decoration: none;
+          transition: color .2s;
+        }
+        .auth-back-link:hover { color: var(--text-primary, #f8fafc); }
+        .auth-logo { margin-bottom: 14px; }
+        .auth-title {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          font-size: 1.8rem; font-weight: 800;
+          letter-spacing: -.02em;
+          background: linear-gradient(135deg, var(--holo-primary, #e08aae) 0%, var(--holo-purple, #8b5cf6) 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          margin-bottom: 6px;
+        }
+        .auth-subtitle { font-size: .88rem; color: var(--text-muted, #94a3b8); margin-bottom: 28px; line-height: 1.5; }
+        .auth-alert {
+          width: 100%; padding: 12px 16px; border-radius: 12px; margin-bottom: 20px;
+          font-size: .85rem; font-weight: 500; line-height: 1.5;
+        }
+        .auth-alert-error {
+          background: var(--error-light, rgba(239,68,68,.12));
+          border: 1px solid rgba(239,68,68,.25);
+          color: var(--error, #ef4444);
+        }
+        .auth-alert-success {
+          background: var(--success-light, rgba(16,185,129,.12));
+          border: 1px solid rgba(16,185,129,.25);
+          color: var(--success, #10b981);
+        }
+        .auth-form { width: 100%; display: flex; flex-direction: column; gap: 18px; }
+        .auth-field { width: 100%; text-align: left; }
+        .auth-field-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .auth-label {
+          font-family: 'JetBrains Mono', monospace; font-size: .72rem; font-weight: 700;
+          text-transform: uppercase; letter-spacing: .04em;
+          color: var(--text-secondary, #e2e8f0);
+          display: block; margin-bottom: 6px;
+        }
+        .auth-field input {
+          width: 100%; padding: 13px 16px; border-radius: 12px;
+          border: 1px solid var(--border-medium, rgba(255,255,255,.12));
+          background: var(--bg-input, #171221);
+          color: var(--text-primary, #f8fafc);
+          font-size: .9rem; font-family: inherit;
+          outline: none; transition: all .25s ease;
+        }
+        .auth-field input::placeholder { color: var(--text-placeholder, #475569); }
+        .auth-field input:focus {
+          border-color: var(--border-focus, #e08aae);
+          box-shadow: 0 0 0 3px var(--accent-light, rgba(224,138,174,.12));
+          background: var(--bg-surface, rgba(26,20,34,.6));
+        }
+        .auth-link { background: none; border: none; color: var(--accent, #e08aae); font-size: .78rem; font-weight: 600; cursor: pointer; padding: 0; transition: color .2s; }
+        .auth-link:hover { color: var(--accent-hover, #b03a6b); }
+        .auth-btn {
+          width: 100%; padding: 14px; border-radius: 12px; border: none;
+          background: linear-gradient(135deg, #b03a6b 0%, #912f56 100%);
+          color: #fff; font-weight: 700; font-size: .92rem;
+          cursor: pointer; transition: all .25s ease;
+          box-shadow: 0 4px 14px rgba(145,47,86,.3);
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .auth-btn:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 20px rgba(145,47,86,.45);
+          filter: brightness(1.08);
+        }
+        .auth-btn:disabled { opacity: .55; cursor: not-allowed; }
+        .auth-btn-outline {
+          background: transparent !important;
+          border: 1px solid var(--border-medium, rgba(255,255,255,.12)) !important;
+          color: var(--text-primary, #f8fafc) !important;
+          box-shadow: none !important;
+          font-weight: 600;
+        }
+        .auth-btn-outline:hover:not(:disabled) {
+          background: var(--bg-hover, rgba(145,47,86,.08)) !important;
+          border-color: var(--border-focus, #e08aae) !important;
+        }
+        .auth-divider {
+          width: 100%; display: flex; align-items: center; gap: 14px;
+          margin: 22px 0;
+        }
+        .auth-divider::before, .auth-divider::after {
+          content: ''; flex: 1; height: 1px;
+          background: var(--border, rgba(255,255,255,.06));
+        }
+        .auth-divider span {
+          font-size: .72rem; color: var(--text-muted, #94a3b8);
+          text-transform: uppercase; letter-spacing: .05em;
+          font-weight: 600;
+        }
+        .auth-switch {
+          margin-top: 28px; font-size: .85rem; color: var(--text-muted, #94a3b8);
+        }
+        .auth-switch button {
+          background: none; border: none; color: var(--accent, #e08aae);
+          font-weight: 700; cursor: pointer; padding: 0; font-size: .85rem;
+          transition: color .2s;
+        }
+        .auth-switch button:hover { color: var(--accent-hover, #b03a6b); }
+      `}</style>
     </div>
   );
 }

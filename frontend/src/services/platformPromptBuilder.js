@@ -157,7 +157,7 @@ Return JSON:
 /**
  * Build interview prompt.
  */
-function buildInterviewPrompt({ question, transcripts, resumeData, jobDescription, conversationMemory, speedMode, selectedModel, tonePreference = 'confident', companyEnrichment = null }) {
+function buildInterviewPrompt({ question, transcripts, resumeData, jobDescription, conversationMemory, speedMode, selectedModel, tonePreference = 'confident', companyEnrichment = null, assignmentDocs = [] }) {
   const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
   let resumeText = resumeData || '';
@@ -182,6 +182,20 @@ function buildInterviewPrompt({ question, transcripts, resumeData, jobDescriptio
     companyContext = `\n── TARGET COMPANY CONTEXT ──\nTarget Company: ${companyEnrichment.companyName || ''}\nCompany Context/Stack details: ${JSON.stringify(companyEnrichment)}\nInclude these details/stack alignment in the response when answering.\n`;
   }
 
+  let assignmentContext = '';
+  const docs = assignmentDocs || [];
+  if (docs.length > 0) {
+    assignmentContext = '\n── CANDIDATE ASSIGNMENT / TAKE-HOME WORK ──\n';
+    assignmentContext += 'The candidate submitted the following assignment(s) for this role. The interviewer may ask about this work. Reference specific decisions, code, or approaches from these assignments when relevant.\n\n';
+    docs.forEach((doc, i) => {
+      const truncatedContent = speedMode
+        ? (doc.content || '').substring(0, 1500)
+        : (doc.content || '').substring(0, 8000);
+      assignmentContext += `ASSIGNMENT ${i + 1}: "${doc.name}"\n${truncatedContent}\n\n`;
+    });
+    assignmentContext += 'ASSIGNMENT RULE: If the interviewer asks about the assignment, project, or work submitted, draw specific examples from the assignment content above. Quote code snippets, architecture decisions, and implementation details directly.\n';
+  }
+
   return `You are a real-time interview coach. The candidate reads your output ON SCREEN while speaking live in an interview.
 CURRENT DATE: ${currentDate}
 
@@ -190,8 +204,9 @@ ${CURRENT_WORLD_FACTS_2026}
 ${CONVERSATIONAL_RULES}${buildMemoryContext(conversationMemory, speedMode)}${buildTranscriptContext(transcripts, selectedModel)}
 ${resumeText ? `CANDIDATE RESUME:\n${resumeText}` : ''}
 ${jdText ? `JOB DESCRIPTION:\n${jdText}` : ''}
-${toneInstruction}
-${companyContext}
+	${toneInstruction}
+	${companyContext}
+	${assignmentContext}
 
 OUTPUT STRUCTURE — FOLLOW EXACTLY:
 1. "answer" = Spoken narrative structured as a natural, conversational response that directly answers what the interviewer is asking.
@@ -238,6 +253,7 @@ export async function* streamPlatformAnswer({
   abortSignal = null,
   tonePreference = 'confident',
   companyEnrichment = null,
+  assignmentDocs = [],
 }) {
   let systemPrompt = '';
   let userPrompt = '';
@@ -263,7 +279,8 @@ export async function* streamPlatformAnswer({
         speedMode, 
         selectedModel,
         tonePreference,
-        companyEnrichment
+        companyEnrichment,
+        assignmentDocs
       });
       userPrompt = `INTERVIEW QUESTION: "${truncatedQuestion}"\nGenerate structured answer now.`;
       break;

@@ -168,7 +168,10 @@ ${targetJob.tailored_resume}`;
   const totalApplied = jobs.length;
   const appliedToday = jobs.filter(job => {
     const today = new Date().toISOString().split('T')[0];
-    const appDate = new Date(job.applied_at).toISOString().split('T')[0];
+    if (!job.applied_at) return false;
+    const d = new Date(job.applied_at);
+    if (isNaN(d.getTime())) return false;
+    const appDate = d.toISOString().split('T')[0];
     return today === appDate;
   }).length;
 
@@ -186,7 +189,10 @@ ${targetJob.tailored_resume}`;
     }
 
     jobs.forEach(job => {
-      const appDate = new Date(job.applied_at).toISOString().split('T')[0];
+      if (!job.applied_at) return;
+      const d = new Date(job.applied_at);
+      if (isNaN(d.getTime())) return;
+      const appDate = d.toISOString().split('T')[0];
       if (counts[appDate]) {
         counts[appDate].count++;
       }

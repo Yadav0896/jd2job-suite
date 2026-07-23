@@ -59,7 +59,9 @@ export default function JobDescriptionInput() {
       }
 
       const data = await response.json();
-      const keywords = data.choices[0].message.content
+      const content = data?.choices?.[0]?.message?.content;
+      if (!content) throw new Error('No keywords returned from AI');
+      const keywords = content
         .split(',')
         .map(kw => kw.trim())
         .filter(kw => kw.length > 0);

@@ -129,7 +129,7 @@ const PricingPage = ({
         {/* Current status display */}
         {userProfile && (
           <div className="current-status-chip" style={{
-            background: 'rgba(255, 255, 255, 0.05)',
+            background: 'var(--bg-surface, rgba(26,20,34,.6))',
             border: '1px solid var(--border)',
             padding: '8px 16px',
             borderRadius: '20px',
@@ -189,7 +189,7 @@ const PricingPage = ({
                 <div className="features-list" style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {(planFeatures[plan.id] || []).map((feature, index) => (
                     <div key={index} className="feature-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
-                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ color: 'var(--primary)' }}>
+                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ color: 'var(--accent, #e08aae)' }}>
                         <path d="M3 9L7 13L15 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                       {feature}
@@ -206,7 +206,7 @@ const PricingPage = ({
                     padding: '12px',
                     borderRadius: 'var(--radius-md)',
                     border: 'none',
-                    background: isTopupDisabled ? 'var(--border)' : 'var(--accent-gradient, var(--primary))',
+                    background: isTopupDisabled ? 'var(--border, rgba(255,255,255,.06))' : 'linear-gradient(135deg, #b03a6b, #912f56)',
                     color: '#fff',
                     fontWeight: '600',
                     marginTop: '24px',

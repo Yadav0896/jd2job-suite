@@ -510,38 +510,38 @@ Provide a detailed evaluation and return JSON in this exact format:
   if (mode === 'conversational' && overallEvaluation) {
     return (
       <div className="ai-interviewer-wrapper">
-        <div className="setup-card" style={{ textAlign: 'center' }}>
+          <div className="setup-card" style={{ textAlign: 'center' }}>
           <h2 className="setup-title" style={{ fontSize: '2rem' }}>Practice Completed!</h2>
-          <p className="setup-subtitle">Overall score and insights from your Speech-to-Speech session.</p>
+          <p className="setup-subtitle" style={{ textAlign: 'center' }}>Overall score and insights from your Speech-to-Speech session.</p>
 
           <div style={{ margin: '32px 0' }}>
-            <div style={{ fontSize: '3.5rem', fontWeight: 900, color: '#a855f7' }}>{overallEvaluation.score} / 10</div>
-            <div style={{ color: '#cbd5e1', fontSize: '1rem', fontWeight: 700 }}>Overall Score</div>
+            <div style={{ fontSize: '3.5rem', fontWeight: 900, background: 'linear-gradient(135deg, var(--holo-primary, #e08aae), var(--berry, #912f56))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{overallEvaluation.score} / 10</div>
+            <div style={{ color: 'var(--text-secondary, #e2e8f0)', fontSize: '1rem', fontWeight: 700 }}>Overall Score</div>
           </div>
 
           <div className="feedback-box" style={{ textAlign: 'left', marginBottom: '24px' }}>
-            <p style={{ margin: 0, fontSize: '0.95rem', color: '#cbd5e1', lineHeight: '1.6' }}>
+            <p style={{ margin: 0, fontSize: '.95rem', color: 'var(--text-secondary, #e2e8f0)', lineHeight: '1.6' }}>
               {overallEvaluation.feedback}
             </p>
 
             <div className="feedback-grid">
               <div className="feedback-metric">
-                <strong style={{ color: '#c084fc', display: 'block', marginBottom: '6px' }}>Key Strengths</strong>
-                <ul style={{ margin: 0, paddingLeft: '14px', color: '#cbd5e1' }}>
+                <strong style={{ color: 'var(--accent, #e08aae)', display: 'block', marginBottom: '6px' }}>Key Strengths</strong>
+                <ul style={{ margin: 0, paddingLeft: '14px', color: 'var(--text-secondary, #e2e8f0)' }}>
                   {overallEvaluation.strengths?.map((s, idx) => <li key={idx}>{s}</li>)}
                 </ul>
               </div>
 
               <div className="feedback-metric">
-                <strong style={{ color: '#fb7185', display: 'block', marginBottom: '6px' }}>Suggested Improvements</strong>
-                <ul style={{ margin: 0, paddingLeft: '14px', color: '#cbd5e1' }}>
+                <strong style={{ color: 'var(--error, #ef4444)', display: 'block', marginBottom: '6px' }}>Suggested Improvements</strong>
+                <ul style={{ margin: 0, paddingLeft: '14px', color: 'var(--text-secondary, #e2e8f0)' }}>
                   {overallEvaluation.suggestions?.map((s, idx) => <li key={idx}>{s}</li>)}
                 </ul>
               </div>
             </div>
           </div>
 
-          <button onClick={() => setIsSetupActive(true)} className="start-btn" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <button onClick={() => setIsSetupActive(true)} className="start-btn" style={{ background: 'var(--bg-surface, rgba(26,20,34,.6))', border: '1px solid var(--border-medium, rgba(255,255,255,.12))', color: 'var(--text-primary, #f8fafc)' }}>
             Practice Again
           </button>
         </div>
@@ -558,29 +558,29 @@ Provide a detailed evaluation and return JSON in this exact format:
       <div className="ai-interviewer-wrapper">
         <div className="setup-card" style={{ textAlign: 'center' }}>
           <h2 className="setup-title" style={{ fontSize: '2rem' }}>Session Completed!</h2>
-          <p className="setup-subtitle">Aggregated metrics and recommendations from Jd2Job AI Coach.</p>
+          <p className="setup-subtitle" style={{ textAlign: 'center' }}>Aggregated metrics and recommendations from Jd2Job AI Coach.</p>
 
           <div style={{ margin: '32px 0' }}>
-            <div style={{ fontSize: '3.5rem', fontWeight: 900, color: '#a855f7' }}>{avgScore} / 10</div>
-            <div style={{ color: '#cbd5e1', fontSize: '1rem', fontWeight: 700 }}>Average Session Score</div>
+            <div style={{ fontSize: '3.5rem', fontWeight: 900, background: 'linear-gradient(135deg, var(--holo-primary, #e08aae), var(--berry, #912f56))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{avgScore} / 10</div>
+            <div style={{ color: 'var(--text-secondary, #e2e8f0)', fontSize: '1rem', fontWeight: 700 }}>Average Session Score</div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: '24px 0', textAlign: 'left' }}>
-            <h3 style={{ color: '#fff', fontSize: '1.1rem', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '8px' }}>
+            <h3 style={{ color: 'var(--text-primary, #f8fafc)', fontSize: '1.1rem', borderBottom: '1px solid var(--border-light, rgba(255,255,255,.04))', paddingBottom: '8px' }}>
               Feedback Insights
             </h3>
             {Object.entries(feedbacks).map(([idx, feedback]) => (
-              <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.04)' }}>
+              <div key={idx} style={{ background: 'var(--bg-surface, rgba(26,20,34,.6))', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-light, rgba(255,255,255,.04))' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <strong style={{ color: '#a855f7' }}>Question {parseInt(idx) + 1}</strong>
-                  <span style={{ fontWeight: 'bold' }}>{feedback.score}/10</span>
+                  <strong style={{ color: 'var(--accent, #e08aae)' }}>Question {parseInt(idx) + 1}</strong>
+                  <span style={{ fontWeight: 'bold', color: 'var(--text-primary, #f8fafc)' }}>{feedback.score}/10</span>
                 </div>
-                <p style={{ margin: 0, fontSize: '0.9rem', color: '#cbd5e1' }}>{feedback.feedback}</p>
+                <p style={{ margin: 0, fontSize: '.9rem', color: 'var(--text-secondary, #e2e8f0)' }}>{feedback.feedback}</p>
               </div>
             ))}
           </div>
 
-          <button onClick={() => setIsSetupActive(true)} className="start-btn" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <button onClick={() => setIsSetupActive(true)} className="start-btn" style={{ background: 'var(--bg-surface, rgba(26,20,34,.6))', border: '1px solid var(--border-medium, rgba(255,255,255,.12))', color: 'var(--text-primary, #f8fafc)' }}>
             Practice Again
           </button>
         </div>
@@ -634,7 +634,7 @@ Provide a detailed evaluation and return JSON in this exact format:
           <div className="main-session-card" style={{ height: '450px', display: 'flex', flexDirection: 'column' }}>
             <div className="question-header">
               <span className="question-index">🎙️ Conversational Speech Session</span>
-              <span style={{ fontSize: '0.8rem', background: 'rgba(168, 85, 247, 0.1)', color: '#c084fc', padding: '2px 8px', borderRadius: '6px', fontWeight: 600 }}>
+              <span style={{ fontSize: '.78rem', background: 'var(--accent-light, rgba(224,138,174,.1))', color: 'var(--accent, #e08aae)', padding: '3px 10px', borderRadius: '8px', fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '.02em' }}>
                 Continuous S2S
               </span>
             </div>
@@ -642,7 +642,7 @@ Provide a detailed evaluation and return JSON in this exact format:
             {/* Rolling Chat Log */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '12px 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {messages.length === 0 && (
-                <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px 0', fontSize: '0.9rem' }}>
+                <div style={{ textAlign: 'center', color: 'var(--text-muted, #94a3b8)', padding: '40px 0', fontSize: '.9rem' }}>
                   Connecting voice line... Speak naturally when the visualizer turns green.
                 </div>
               )}
@@ -652,16 +652,16 @@ Provide a detailed evaluation and return JSON in this exact format:
                    style={{ 
                      alignSelf: m.sender === 'user' ? 'flex-end' : 'flex-start',
                      maxWidth: '80%',
-                     background: m.sender === 'user' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(255,255,255,0.03)',
-                     border: m.sender === 'user' ? '1px solid rgba(168, 85, 247, 0.3)' : '1px solid rgba(255,255,255,0.06)',
+                     background: m.sender === 'user' ? 'var(--accent-light, rgba(224,138,174,.12))' : 'var(--bg-surface, rgba(26,20,34,.6))',
+                     border: m.sender === 'user' ? '1px solid var(--glass-border, rgba(255,255,255,.12))' : '1px solid var(--border-light, rgba(255,255,255,.04))',
                      borderRadius: m.sender === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                      padding: '12px 16px',
-                     fontSize: '0.9rem',
+                     fontSize: '.9rem',
                      lineHeight: '1.5',
-                     color: m.sender === 'user' ? '#f3e8ff' : '#cbd5e1'
+                     color: 'var(--text-primary, #f8fafc)'
                    }}
                 >
-                  <strong style={{ display: 'block', fontSize: '0.75rem', color: m.sender === 'user' ? '#c084fc' : '#94a3b8', marginBottom: '4px' }}>
+                  <strong style={{ display: 'block', fontSize: '.72rem', color: m.sender === 'user' ? 'var(--accent, #e08aae)' : 'var(--text-muted, #94a3b8)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '.04em', fontFamily: 'JetBrains Mono, monospace' }}>
                     {m.sender === 'user' ? 'You' : 'Interviewer'}
                   </strong>
                   {m.text}
@@ -670,12 +670,12 @@ Provide a detailed evaluation and return JSON in this exact format:
               
               {/* Live interim transcript display */}
               {localTranscript && (
-                <div style={{ alignSelf: 'flex-end', maxWidth: '80%', opacity: 0.6, background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', fontSize: '0.9rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                <div style={{ alignSelf: 'flex-end', maxWidth: '80%', opacity: .65, background: 'var(--bg-surface, rgba(26,20,34,.6))', padding: '12px 16px', borderRadius: '12px', fontSize: '.9rem', color: 'var(--text-muted, #94a3b8)', fontStyle: 'italic' }}>
                   {localTranscript}
                 </div>
               )}
               {agentText && (
-                <div style={{ alignSelf: 'flex-start', maxWidth: '80%', opacity: 0.8, background: 'rgba(255,255,255,0.02)', padding: '12px 16px', borderRadius: '12px', fontSize: '0.9rem', color: '#94a3b8' }}>
+                <div style={{ alignSelf: 'flex-start', maxWidth: '80%', opacity: .8, background: 'var(--bg-surface, rgba(26,20,34,.6))', padding: '12px 16px', borderRadius: '12px', fontSize: '.9rem', color: 'var(--text-secondary, #e2e8f0)' }}>
                   {agentText}
                 </div>
               )}
@@ -684,14 +684,14 @@ Provide a detailed evaluation and return JSON in this exact format:
             </div>
 
             {/* Fallback Text Input (Accessibility) */}
-            <div style={{ display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '8px 12px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', gap: '8px', background: 'var(--bg-input, #171221)', border: '1px solid var(--border-light, rgba(255,255,255,.05))', borderRadius: '10px', padding: '8px 12px', marginBottom: '12px' }}>
               <input 
                 type="text" 
                 value={typeText} 
                 onChange={(e) => setTypeText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSendText(); }}
                 placeholder="Type answer here instead of speaking..."
-                style={{ flex: 1, background: 'transparent', border: 'none', color: '#fff', outline: 'none', fontSize: '0.9rem' }}
+                style={{ flex: 1, background: 'transparent', border: 'none', color: 'var(--text-primary, #f8fafc)', outline: 'none', fontSize: '.9rem' }}
               />
               <button 
                 onClick={handleSendText} 
@@ -704,11 +704,11 @@ Provide a detailed evaluation and return JSON in this exact format:
             </div>
 
             {/* Audio Controls */}
-            <div className="action-row" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '16px' }}>
+            <div className="action-row" style={{ borderTop: '1px solid var(--border-light, rgba(255,255,255,.04))', paddingTop: '16px' }}>
               <button 
                 onClick={toggleVoiceStream} 
                 className="action-btn"
-                style={{ background: isVoiceActive ? '#ef4444' : '#22c55e', borderColor: 'transparent', fontWeight: 'bold' }}
+                style={{ background: isVoiceActive ? 'var(--error, #ef4444)' : 'var(--success, #10b981)', borderColor: 'transparent', color: '#fff', fontWeight: 'bold' }}
               >
                 {isVoiceActive ? '🛑 Pause Interview' : '🎙️ Start Interview'}
               </button>
@@ -757,7 +757,7 @@ Provide a detailed evaluation and return JSON in this exact format:
             <>
               <div className="question-header">
                 <span className="question-index">Question {currentIndex + 1} of 5</span>
-                <span style={{ fontSize: '0.8rem', background: 'rgba(168, 85, 247, 0.1)', color: '#c084fc', padding: '2px 8px', borderRadius: '6px', fontWeight: 600 }}>
+                <span style={{ fontSize: '.78rem', background: 'var(--accent-light, rgba(224,138,174,.1))', color: 'var(--accent, #e08aae)', padding: '3px 10px', borderRadius: '8px', fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '.02em' }}>
                   {currentQ.category}
                 </span>
               </div>
@@ -773,7 +773,7 @@ Provide a detailed evaluation and return JSON in this exact format:
               {currentQ.hints?.length > 0 && (
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {currentQ.hints.map((hint, idx) => (
-                    <span key={idx} style={{ fontSize: '0.75rem', color: '#94a3b8', background: 'rgba(255,255,255,0.04)', padding: '4px 10px', borderRadius: '6px' }}>
+                    <span key={idx} style={{ fontSize: '.78rem', color: 'var(--text-muted, #94a3b8)', background: 'var(--bg-surface, rgba(26,20,34,.6))', border: '1px solid var(--border-light, rgba(255,255,255,.04))', padding: '5px 12px', borderRadius: '8px' }}>
                       💡 {hint}
                     </span>
                   ))}
@@ -781,14 +781,14 @@ Provide a detailed evaluation and return JSON in this exact format:
               )}
 
               <div className="live-transcript-box">
-                <div style={{ fontSize: '0.75rem', color: '#cbd5e1', marginBottom: '4px', textTransform: 'uppercase', fontWeight: 'bold' }}>
+                <div style={{ fontSize: '.72rem', color: 'var(--text-secondary, #e2e8f0)', marginBottom: '6px', textTransform: 'uppercase', fontWeight: 'bold', fontFamily: 'JetBrains Mono, monospace', letterSpacing: '.04em' }}>
                   Your Answer:
                 </div>
                 <textarea 
                   value={userAnswers[currentIndex] || ''} 
                   onChange={(e) => setUserAnswers(prev => ({ ...prev, [currentIndex]: e.target.value }))}
                   placeholder={localIsListening ? "Speak now... (listening)" : "Your transcript will appear here, or you can type directly."}
-                  style={{ width: '100%', background: 'transparent', border: 'none', color: '#cbd5e1', outline: 'none', resize: 'none', fontSize: '0.85rem' }}
+                  style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary, #f8fafc)', outline: 'none', resize: 'none', fontSize: '.85rem', fontFamily: "'JetBrains Mono', monospace" }}
                   rows={3}
                 />
               </div>
@@ -817,25 +817,25 @@ Provide a detailed evaluation and return JSON in this exact format:
               {showFeedback && currentFeedback && (
                 <div className="feedback-box">
                   <div className="feedback-head">
-                    <span style={{ fontWeight: 800, color: '#fff' }}>Evaluation Result</span>
+                    <span style={{ fontWeight: 800, color: 'var(--text-primary, #f8fafc)' }}>Evaluation Result</span>
                     <span className="feedback-score">{currentFeedback.score} / 10</span>
                   </div>
 
-                  <p style={{ margin: 0, fontSize: '0.9rem', color: '#cbd5e1', lineHeight: '1.5' }}>
+                  <p style={{ margin: 0, fontSize: '.9rem', color: 'var(--text-secondary, #e2e8f0)', lineHeight: '1.6' }}>
                     {currentFeedback.feedback}
                   </p>
 
                   <div className="feedback-grid">
                     <div className="feedback-metric">
-                      <strong style={{ color: '#c084fc', display: 'block', marginBottom: '4px' }}>Strengths</strong>
-                      <ul style={{ margin: 0, paddingLeft: '14px', color: '#cbd5e1' }}>
+                      <strong style={{ color: 'var(--accent, #e08aae)', display: 'block', marginBottom: '4px' }}>Strengths</strong>
+                      <ul style={{ margin: 0, paddingLeft: '14px', color: 'var(--text-secondary, #e2e8f0)' }}>
                         {currentFeedback.strengths?.map((s, idx) => <li key={idx}>{s}</li>)}
                       </ul>
                     </div>
 
                     <div className="feedback-metric">
-                      <strong style={{ color: '#fb7185', display: 'block', marginBottom: '4px' }}>Improvements</strong>
-                      <ul style={{ margin: 0, paddingLeft: '14px', color: '#cbd5e1' }}>
+                      <strong style={{ color: 'var(--error, #ef4444)', display: 'block', marginBottom: '4px' }}>Improvements</strong>
+                      <ul style={{ margin: 0, paddingLeft: '14px', color: 'var(--text-secondary, #e2e8f0)' }}>
                         {currentFeedback.suggestions?.map((s, idx) => <li key={idx}>{s}</li>)}
                       </ul>
                     </div>
@@ -846,7 +846,7 @@ Provide a detailed evaluation and return JSON in this exact format:
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '40px 0' }}>
               <div className="thinking-spinner" style={{ width: 40, height: 40 }} />
-              <div style={{ color: '#cbd5e1' }}>Preparing your custom interview questions...</div>
+              <div style={{ color: 'var(--text-secondary, #e2e8f0)', fontSize: '.9rem' }}>Preparing your custom interview questions...</div>
             </div>
           )}
         </div>

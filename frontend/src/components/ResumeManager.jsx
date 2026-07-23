@@ -67,9 +67,10 @@ export default function ResumeManager() {
 
   const deleteResume = (id) => {
     const wasActive = resumes.find(r => r.id === id)?.active;
-    const updated = resumes.filter(r => r.id !== id);
+    let updated = resumes.filter(r => r.id !== id);
     if (wasActive && updated.length > 0) {
-      updated[0].active = true;
+      // Create new objects to avoid state mutation
+      updated = updated.map((r, i) => i === 0 ? { ...r, active: true } : r);
       dispatch({ type: 'SET_RESUME_DATA', payload: updated[0].content });
     } else if (!updated.length) {
       dispatch({ type: 'SET_RESUME_DATA', payload: null });

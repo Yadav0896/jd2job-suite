@@ -187,6 +187,16 @@ export class DeepgramVoiceAgent {
       this.ws = null;
     }
 
+    // Close audio contexts to prevent browser-level resource exhaustion
+    if (this.audioContext && this.audioContext.state !== 'closed') {
+      try { this.audioContext.close(); } catch (e) { /* ignore */ }
+      this.audioContext = null;
+    }
+    if (this.playbackContext && this.playbackContext.state !== 'closed') {
+      try { this.playbackContext.close(); } catch (e) { /* ignore */ }
+      this.playbackContext = null;
+    }
+
     this.stopKeepalive();
     this.isConnected = false;
     this.sessionReady = false;

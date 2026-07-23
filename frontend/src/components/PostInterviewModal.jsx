@@ -171,10 +171,10 @@ Return ONLY valid JSON:
               onClick={() => setActiveTab(tab.id)}
               style={{
                 flex: 1, padding: '12px', border: 'none', background: 'none',
-                color: activeTab === tab.id ? 'var(--primary)' : 'var(--text-muted)',
+                color: activeTab === tab.id ? 'var(--accent, #e08aae)' : 'var(--text-muted)',
                 fontWeight: activeTab === tab.id ? 700 : 500,
                 fontSize: '0.85rem', cursor: 'pointer',
-                borderBottom: activeTab === tab.id ? '2px solid var(--primary)' : '2px solid transparent',
+                borderBottom: activeTab === tab.id ? '2px solid var(--accent, #e08aae)' : '2px solid transparent',
                 transition: 'all 0.18s',
               }}
             >{tab.label}</button>

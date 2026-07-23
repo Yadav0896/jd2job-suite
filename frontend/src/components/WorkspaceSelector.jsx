@@ -104,19 +104,22 @@ export default function WorkspaceSelector({ onSelect }) {
           <button 
             onClick={() => setShowGuide(true)}
             style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'var(--bg-surface, rgba(26,20,34,.6))',
+              border: '1px solid var(--border-medium, rgba(255,255,255,.12))',
               borderRadius: '8px',
-              padding: '6px 12px',
-              color: '#fff',
-              fontSize: '0.8rem',
+              padding: '7px 14px',
+              color: 'var(--text-primary, #f8fafc)',
+              fontSize: '.8rem',
               fontWeight: '600',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              transition: 'background 0.2s'
+              transition: 'all 0.2s ease',
+              fontFamily: 'inherit'
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent, #e08aae)'; e.currentTarget.style.background = 'var(--bg-hover, rgba(145,47,86,.12))'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-medium, rgba(255,255,255,.12))'; e.currentTarget.style.background = 'var(--bg-surface, rgba(26,20,34,.6))'; }}
           >
             📖 User Guide
           </button>
@@ -157,8 +160,8 @@ export default function WorkspaceSelector({ onSelect }) {
                   borderColor: isHovered ? a.hoverBorder : undefined,
                   boxShadow: isHovered ? a.hoverShadow : undefined,
                   background: isHovered
-                    ? `linear-gradient(180deg, white 0%, ${a.glowBg.replace('0.04', '0.07')} 100%)`
-                    : 'white',
+                    ? `linear-gradient(180deg, var(--bg-card, #221a2c) 0%, ${a.glowBg.replace('0.04', '0.07')} 100%)`
+                    : 'var(--bg-card, rgba(34,26,44,.55))',
                 }}
                 onMouseEnter={() => setHovered(a.id)}
                 onMouseLeave={() => setHovered(null)}
@@ -249,7 +252,8 @@ export default function WorkspaceSelector({ onSelect }) {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0, 0, 0, 0.8)',
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(8px)',
           zIndex: 999999,
           display: 'flex',
           alignItems: 'center',
@@ -257,8 +261,8 @@ export default function WorkspaceSelector({ onSelect }) {
           padding: '24px'
         }}>
           <div style={{
-            background: '#12121a',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: 'var(--bg-card, rgba(34,26,44,.55))',
+            border: '1px solid var(--glass-border, rgba(255,255,255,.08))',
             borderRadius: '16px',
             width: '100%',
             maxWidth: '680px',
@@ -271,28 +275,28 @@ export default function WorkspaceSelector({ onSelect }) {
             {/* Header */}
             <div style={{
               padding: '20px 24px',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              borderBottom: '1px solid var(--border-light, rgba(255,255,255,.04))',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              background: '#161622'
+              background: 'var(--bg-surface, rgba(26,20,34,.6))'
             }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600, color: '#f8fafc' }}>📖 User Onboarding Guide</h3>
-                <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#94a3b8' }}>Learn how to set up and master your AI Interview Suite</p>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary, #f8fafc)' }}>📖 User Onboarding Guide</h3>
+                <p style={{ margin: '4px 0 0', fontSize: '.75rem', color: 'var(--text-muted, #94a3b8)' }}>Learn how to set up and master your AI Interview Suite</p>
               </div>
               <button 
                 onClick={() => setShowGuide(false)}
                 style={{ 
                   background: 'none', 
                   border: 'none', 
-                  color: '#94a3b8', 
+                  color: 'var(--text-muted, #94a3b8)', 
                   cursor: 'pointer',
                   fontSize: '1.2rem',
                   transition: 'color 0.2s'
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#ffffff'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary, #f8fafc)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted, #94a3b8)'}
               >
                 ✕
               </button>
@@ -301,8 +305,8 @@ export default function WorkspaceSelector({ onSelect }) {
             {/* Guide Tabs */}
             <div style={{
               display: 'flex',
-              background: '#14141e',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+              background: 'var(--bg-surface, rgba(26,20,34,.6))',
+              borderBottom: '1px solid var(--border-light, rgba(255,255,255,.04))'
             }}>
               {['extension', 'interview', 'ghost'].map((tab) => (
                 <button
@@ -313,11 +317,11 @@ export default function WorkspaceSelector({ onSelect }) {
                     padding: '14px',
                     border: 'none',
                     background: 'none',
-                    color: guideTab === tab ? '#10b981' : '#94a3b8',
+                    color: guideTab === tab ? 'var(--accent, #e08aae)' : 'var(--text-muted, #94a3b8)',
                     fontWeight: guideTab === tab ? 700 : 500,
                     fontSize: '0.8rem',
                     cursor: 'pointer',
-                    borderBottom: guideTab === tab ? '2px solid #10b981' : '2px solid transparent',
+                    borderBottom: guideTab === tab ? '2px solid var(--accent, #e08aae)' : '2px solid transparent',
                     transition: 'all 0.18s'
                   }}
                 >
@@ -333,15 +337,15 @@ export default function WorkspaceSelector({ onSelect }) {
               padding: '24px',
               overflowY: 'auto',
               flex: 1,
-              background: '#09090d',
-              color: '#cbd5e1',
+              background: 'var(--bg-primary, #100c16)',
+              color: 'var(--text-secondary, #e2e8f0)',
               fontSize: '0.85rem',
-              lineHeight: 1.6,
-              fontFamily: 'system-ui, -apple-system, sans-serif'
+              lineHeight: 1.7,
+              fontFamily: 'inherit'
             }}>
               {guideTab === 'extension' && (
                 <div>
-                  <h4 style={{ color: '#f8fafc', marginTop: 0, marginBottom: '12px', fontSize: '0.95rem' }}>💼 Syncing LinkedIn Applications Automatically</h4>
+                  <h4 style={{ color: 'var(--text-primary, #f8fafc)', marginTop: 0, marginBottom: '12px', fontSize: '0.95rem' }}>💼 Syncing LinkedIn Applications Automatically</h4>
                   <p>Never manually track your job applications again. Sync all your data in real-time:</p>
                   <ol style={{ paddingLeft: '20px', margin: '0 0 16px 0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <li>Open the <strong>Jd2Job</strong> workspace and click <strong>Copy User ID</strong> from the top bar.</li>
@@ -350,7 +354,7 @@ export default function WorkspaceSelector({ onSelect }) {
                     <li>Click <strong>Start</strong> in the extension. As you apply to jobs on LinkedIn, the extension automatically extracts the job title, company, custom tailored resume, and recruiter's profile details.</li>
                     <li>Your applications appear instantly in this dashboard!</li>
                   </ol>
-                  <div style={{ background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.15)', borderRadius: '8px', padding: '12px', fontSize: '0.8rem', color: '#10b981' }}>
+                  <div style={{ background: 'var(--success-light, rgba(16,185,129,.1))', border: '1px solid rgba(16,185,129,.2)', borderRadius: '8px', padding: '12px', fontSize: '0.8rem', color: 'var(--success, #10b981)' }}>
                     💡 <strong>Tip:</strong> Click the <strong>Outreach</strong> button next to any synced job in your dashboard to generate a custom-tailored recruiter email and draft it with one click!
                   </div>
                 </div>
@@ -358,7 +362,7 @@ export default function WorkspaceSelector({ onSelect }) {
 
               {guideTab === 'interview' && (
                 <div>
-                  <h4 style={{ color: '#f8fafc', marginTop: 0, marginBottom: '12px', fontSize: '0.95rem' }}>🎯 Master the Real-Time Interview Assistant</h4>
+                  <h4 style={{ color: 'var(--text-primary, #f8fafc)', marginTop: 0, marginBottom: '12px', fontSize: '0.95rem' }}>🎯 Master the Real-Time Interview Assistant</h4>
                   <p>Let the AI listen to your interview questions and guide you live:</p>
                   <ol style={{ paddingLeft: '20px', margin: '0 0 16px 0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <li>Launch the <strong>Interview Assistant</strong> from the home selector.</li>
@@ -371,7 +375,7 @@ export default function WorkspaceSelector({ onSelect }) {
 
               {guideTab === 'ghost' && (
                 <div>
-                  <h4 style={{ color: '#f8fafc', marginTop: 0, marginBottom: '12px', fontSize: '0.95rem' }}>👁️ Stealth Ghost Mode (Eye Contact Calibration)</h4>
+                  <h4 style={{ color: 'var(--text-primary, #f8fafc)', marginTop: 0, marginBottom: '12px', fontSize: '0.95rem' }}>👁️ Stealth Ghost Mode (Eye Contact Calibration)</h4>
                   <p>Read your notes and answers naturally during video calls without looking away:</p>
                   <ol style={{ paddingLeft: '20px', margin: '0 0 16px 0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <li>Activate <strong>Ghost Mode</strong> from the top controls bar of your live session workspace.</li>
@@ -386,23 +390,27 @@ export default function WorkspaceSelector({ onSelect }) {
             {/* Footer */}
             <div style={{
               padding: '16px 20px',
-              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              borderTop: '1px solid var(--border-light, rgba(255,255,255,.04))',
               display: 'flex',
               justifyContent: 'flex-end',
-              background: '#161622'
+              background: 'var(--bg-surface, rgba(26,20,34,.6))'
             }}>
               <button 
                 onClick={() => setShowGuide(false)}
                 style={{ 
-                  background: '#10b981', 
+                  background: 'linear-gradient(135deg, #b03a6b, #912f56)', 
                   color: '#fff', 
                   border: 'none', 
                   borderRadius: '8px',
                   padding: '8px 20px',
                   cursor: 'pointer',
                   fontWeight: 600,
-                  fontSize: '0.85rem'
+                  fontSize: '0.85rem',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 4px 14px rgba(145,47,86,.3)'
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(145,47,86,.45)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(145,47,86,.3)'; }}
               >
                 Got It, Let's Go!
               </button>

@@ -30,6 +30,9 @@ if (allowedOrigin) {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
+// Trust the first proxy (required for correct req.ip behind nginx/Railway/load balancers)
+app.set('trust proxy', 1);
+
 // ── Supabase Client (service role for privileged operations) ──
 const { createClient } = require('@supabase/supabase-js');
 const supabase = createClient(
@@ -199,6 +202,10 @@ app.post('/api/tts/speak', requireAuth, rateLimiter(30, 60000), async (req, res)
     res.setHeader('Content-Type', 'audio/mpeg');
     res.setHeader('Content-Disposition', 'attachment; filename="speech.mp3"');
     
+    response.body.on('error', (err) => {
+      if (err.code !== 'EPIPE') console.error('TTS stream error:', err.message);
+      if (!res.headersSent) res.status(502).end();
+    });
     response.body.pipe(res);
   } catch (error) {
     console.error('TTS proxy error:', error);
@@ -244,6 +251,10 @@ app.post('/api/tts/stream', requireAuth, rateLimiter(30, 60000), async (req, res
     res.setHeader('Content-Type', 'audio/mpeg');
     res.setHeader('Content-Disposition', 'attachment; filename="speech.mp3"');
     
+    response.body.on('error', (err) => {
+      if (err.code !== 'EPIPE') console.error('TTS stream error:', err.message);
+      if (!res.headersSent) res.status(502).end();
+    });
     response.body.pipe(res);
   } catch (error) {
     console.error('TTS stream proxy error:', error);
@@ -306,6 +317,10 @@ app.post('/api/deepseek/chat', requireAuth, rateLimiter(60, 60000), async (req, 
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
+    upstreamRes.body.on('error', (err) => {
+      if (err.code !== 'EPIPE') console.error('Chat proxy stream error:', err.message);
+      if (!res.headersSent) res.status(502).end();
+    });
     upstreamRes.body.pipe(res);
   } catch (error) {
     console.error('Chat proxy error:', error);
@@ -974,7 +989,12 @@ app.post('/api/payments/verify', requireAuth, async (req, res) => {
   }
 
   try {
-    // Idempotency: a payment id must only ever credit once (blocks replay attacks)
+    // Idempotency: a payment id must only ever credit once (blocks replay attacks).
+    // IMPORTANT: For complete race-condition safety, add this unique index in
+    // your Supabase SQL editor (ensures no two concurrent requests both pass):
+    //   CREATE UNIQUE INDEX IF NOT EXISTS idx_credit_tx_payment_id
+    //     ON credit_transactions ((metadata->>'payment_id'))
+    //     WHERE metadata->>'payment_id' IS NOT NULL;
     const { data: existingTx } = await supabase
       .from('credit_transactions')
       .select('id')
@@ -992,7 +1012,8 @@ app.post('/api/payments/verify', requireAuth, async (req, res) => {
       .update(body)
       .digest('hex');
 
-    if (expectedSignature !== razorpay_signature) {
+    if (expectedSignature.length !== razorpay_signature.length ||
+        !crypto.timingSafeEqual(Buffer.from(expectedSignature), Buffer.from(razorpay_signature))) {
       return res.status(400).json({ error: 'Invalid payment signature' });
     }
 
@@ -1265,13 +1286,17 @@ app.delete('/api/jd2job/jobs/:id', requireAuth, async (req, res) => {
 // In-memory tracking of active local user session
 let activeLocalUserId = null;
 
-app.post('/api/jd2job/local-session', (req, res) => {
+app.post('/api/jd2job/local-session', requireAuth, (req, res) => {
   const { userId } = req.body;
-  activeLocalUserId = userId || null;
+  // Only allow setting your own user ID
+  if (userId && userId !== req.user.id) {
+    return res.status(403).json({ error: 'Cannot set session for another user' });
+  }
+  activeLocalUserId = req.user.id;
   res.json({ success: true, userId: activeLocalUserId });
 });
 
-app.get('/api/jd2job/local-session', (req, res) => {
+app.get('/api/jd2job/local-session', requireAuth, (req, res) => {
   res.json({ success: true, userId: activeLocalUserId });
 });
 
@@ -1342,12 +1367,19 @@ async function deductCreditFor(userId, reason, metadata = {}) {
     return { ok: false, status: 402, reason: 'Insufficient credits. Please upgrade your plan or top up.' };
   }
 
-  const newCredits = profile.credits - 1;
-  const { error: updateError } = await supabase
+  // Atomic decrement: only update if credits still >= 1 (prevents TOCTOU double-spend)
+  const { data: updated, error: updateError } = await supabase
     .from('profiles')
-    .update({ credits: newCredits, updated_at: new Date().toISOString() })
-    .eq('id', userId);
+    .update({ credits: profile.credits - 1, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+    .gte('credits', 1)             // guard: don't decrement below 0
+    .select('credits')
+    .single();
 
+  // If no row matched, another concurrent request already spent the credit
+  if (!updated) {
+    return { ok: false, status: 402, reason: 'Credit already consumed. Please try again.' };
+  }
   if (updateError) return { ok: false, status: 500, reason: updateError.message };
 
   await supabase.from('credit_transactions').insert({
@@ -1357,7 +1389,7 @@ async function deductCreditFor(userId, reason, metadata = {}) {
     metadata,
   });
 
-  return { ok: true, credits: newCredits };
+  return { ok: true, credits: updated.credits };
 }
 
 // Generate a JD-tailored resume. Costs 1 credit (free on unlimited plans).
@@ -1388,6 +1420,21 @@ app.post('/api/extension/tailor-resume', requireAuth, rateLimiter(10, 60000), as
     res.json({ success: true, ...result, credits: deduction.credits });
   } catch (err) {
     console.error('[Extension] tailor-resume error:', err.message);
+    // Refund the credit — user was already charged in deductCreditFor above
+    try {
+      await supabase
+        .from('profiles')
+        .update({ credits: deduction.credits + 1, updated_at: new Date().toISOString() })
+        .eq('id', req.user.id);
+      await supabase.from('credit_transactions').insert({
+        user_id: req.user.id,
+        amount: 1,
+        reason: 'refund_tailored_resume_failed',
+        metadata: { error: err.message, jobTitle: (jobTitle || '').slice(0, 200) },
+      });
+    } catch (refundErr) {
+      console.error('[Credits] Refund failed:', refundErr.message);
+    }
     res.status(502).json({ error: err.message || 'Failed to generate tailored resume' });
   }
 });

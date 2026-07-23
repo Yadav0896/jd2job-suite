@@ -8,16 +8,21 @@ export default function KeywordTracker() {
 
   return (
     <div className="keyword-tracker">
-      {technicalKeywords.map((kw, idx) => (
-        <div 
-          key={idx} 
-          className={`keyword-pill ${kw.matched ? 'matched' : ''}`}
-          title={kw.matched ? 'Mentioned!' : 'Try to mention this technical skill'}
-        >
-          <span className="keyword-check">✓</span>
-          {kw.word}
-        </div>
-      ))}
+      {technicalKeywords.map((kw, idx) => {
+        // Normalize: support both {word, matched} objects and plain strings
+        const word = typeof kw === 'string' ? kw : kw.word;
+        const matched = typeof kw === 'string' ? false : kw.matched;
+        return (
+          <div 
+            key={idx} 
+            className={`keyword-pill ${matched ? 'matched' : ''}`}
+            title={matched ? 'Mentioned!' : 'Try to mention this technical skill'}
+          >
+            <span className="keyword-check">✓</span>
+            {word}
+          </div>
+        );
+      })}
     </div>
   );
 }

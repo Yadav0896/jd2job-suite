@@ -5,125 +5,123 @@ const DEEPSEEK_CHAT_URL = 'https://api.deepseek.com/chat/completions';
 const GROQ_CHAT_URL     = 'https://api.groq.com/openai/v1/chat/completions';
 const NVIDIA_CHAT_URL   = 'https://integrate.api.nvidia.com/v1/chat/completions';
 
+const PROVIDER_TIMEOUT_MS = 2000; // Fail fast — 2s per provider, fall through immediately
+
+function fetchWithTimeout(url, options, timeoutMs = PROVIDER_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal })
+    .finally(() => clearTimeout(timer));
+}
+
 /**
- * Routes the chat request to the correct provider.
- * Respects the user's selected provider and model, and provides smart fallbacks.
+ * Routes the chat request to the fastest available provider.
+ * Fails FAST (2s per provider) and falls through immediately to the next.
+ * Chain: Groq 8B → NVIDIA 8B → DeepSeek Chat
  */
 async function handleChatRoute(req) {
   const { provider, model, selectedModel, ...llmBody } = req.body;
 
-  // ── Fast mode: use llama_fast provider (Groq 8B) ─────────────────────────
+  // ── Fast mode: ultra-fast Llama 8B on Groq/NVIDIA ─────────────────────
   if (selectedModel === 'llama_fast') {
     try {
-      console.log('[ModelProvider] Attempting llama_fast route (Groq 8B)');
+      console.log('[ModelProvider] ▶ llama_fast: trying Groq 8B...');
       const upstreamRes = await streamLlamaFast(llmBody);
+      console.log('[ModelProvider] ✓ llama_fast connected');
       return upstreamRes;
     } catch (error) {
-      console.error('[ModelProvider] Fast model route failed, falling back:', error.message);
+      console.warn('[ModelProvider] ⚠ llama_fast failed — falling through to next provider:', error.message.substring(0, 100));
     }
+    // Don't return — fall through to the chain below
   }
 
   const groqKey = process.env.GROQ_API_KEY;
   const nvidiaKey = process.env.NVIDIA_API_KEY;
   const deepseekKey = process.env.DEEPSEEK_API_KEY;
 
-  // ── Route directly if provider is specified ──────────────────────────────
+  // ── Explicit DeepSeek route ──────────────────────────────────────────
   if (provider === 'deepseek' && deepseekKey) {
-    console.log('[ModelProvider] Routing directly to DeepSeek');
-    const dsModel = model === 'deepseek-reasoner' ? 'deepseek-reasoner' : 'deepseek-chat';
-    const dsBody = { ...llmBody, model: dsModel };
-    const dsRes = await fetch(DEEPSEEK_CHAT_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${deepseekKey}`,
-      },
-      body: JSON.stringify(dsBody),
-    });
-    if (dsRes.ok) return dsRes;
-    console.error(`[ModelProvider] DeepSeek direct route failed: ${dsRes.status}`);
+    console.log('[ModelProvider] ▶ DeepSeek (explicit route)...');
+    try {
+      const dsModel = model === 'deepseek-reasoner' ? 'deepseek-reasoner' : 'deepseek-chat';
+      const dsRes = await fetchWithTimeout(DEEPSEEK_CHAT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${deepseekKey}`,
+        },
+        body: JSON.stringify({ ...llmBody, model: dsModel }),
+      });
+      if (dsRes.ok) { console.log('[ModelProvider] ✓ DeepSeek connected'); return dsRes; }
+      console.warn(`[ModelProvider] ⚠ DeepSeek explicit failed (${dsRes.status}) — falling through`);
+    } catch (err) {
+      console.warn('[ModelProvider] ⚠ DeepSeek explicit error — falling through:', err.message.substring(0, 100));
+    }
   }
 
-  // If user selected Nvidia but Nvidia key is invalid/unauthorized (like the expired nvapi key),
-  // we redirect it to Groq to keep it ultra-fast (~0.2s) and working.
-  if ((provider === 'nvidia' || !provider) && groqKey) {
+  // ── Chain 1: Groq (fastest) ──────────────────────────────────────────
+  if (groqKey) {
     try {
-      // Map Nvidia models to Groq equivalents
-      let groqModel = 'llama-3.3-70b-versatile';
-      if (model && model.includes('8b')) {
-        groqModel = 'llama-3.1-8b-instant';
-      } else if (model && model.includes('mixtral')) {
-        groqModel = 'llama-3.3-70b-versatile'; // mixtral-8x7b was decommissioned on Groq
-      }
-
-      console.log(`[ModelProvider] Routing to Groq (${groqModel}) for speed & reliability`);
-      const body = {
-        ...llmBody,
-        model: groqModel,
-      };
-
-      const groqRes = await fetch(GROQ_CHAT_URL, {
+      let groqModel = 'llama-3.1-8b-instant';
+      if (model && !model.includes('8b')) groqModel = 'llama-3.3-70b-versatile';
+      console.log(`[ModelProvider] ▶ Groq (${groqModel})...`);
+      const groqRes = await fetchWithTimeout(GROQ_CHAT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${groqKey}`,
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...llmBody, model: groqModel }),
       });
-
-      if (groqRes.ok) return groqRes;
-      const errText = await groqRes.text().catch(() => groqRes.statusText);
-      console.error(`[ModelProvider] Groq routing failed (${groqRes.status}): ${errText}`);
-    } catch (error) {
-      console.error('[ModelProvider] Groq routing error:', error.message);
+      if (groqRes.ok) { console.log('[ModelProvider] ✓ Groq connected'); return groqRes; }
+      console.warn(`[ModelProvider] ⚠ Groq failed (${groqRes.status}) — falling through`);
+    } catch (err) {
+      console.warn('[ModelProvider] ⚠ Groq error — falling through:', err.message.substring(0, 100));
     }
   }
 
-  // ── Fallback to Nvidia NIM if key exists and Groq failed ──────────────────
+  // ── Chain 2: NVIDIA NIM ──────────────────────────────────────────────
   if (nvidiaKey) {
     try {
-      console.log('[ModelProvider] Routing to Nvidia NIM');
-      const body = {
-        ...llmBody,
-        model: model || 'meta/llama-3.1-70b-instruct',
-      };
-
-      const nvidiaRes = await fetch(NVIDIA_CHAT_URL, {
+      console.log('[ModelProvider] ▶ NVIDIA NIM...');
+      const nvidiaRes = await fetchWithTimeout(NVIDIA_CHAT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${nvidiaKey}`,
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...llmBody, model: model || 'meta/llama-3.1-8b-instruct' }),
       });
-
-      if (nvidiaRes.ok) return nvidiaRes;
-      const errText = await nvidiaRes.text().catch(() => nvidiaRes.statusText);
-      console.error(`[ModelProvider] Nvidia NIM failed (${nvidiaRes.status}): ${errText}`);
-    } catch (error) {
-      console.error('[ModelProvider] Nvidia routing error:', error.message);
+      if (nvidiaRes.ok) { console.log('[ModelProvider] ✓ NVIDIA connected'); return nvidiaRes; }
+      console.warn(`[ModelProvider] ⚠ NVIDIA failed (${nvidiaRes.status}) — falling through`);
+    } catch (err) {
+      console.warn('[ModelProvider] ⚠ NVIDIA error — falling through:', err.message.substring(0, 100));
     }
   }
 
-  // ── Last resort: DeepSeek ─────────────────────────────────────────────────
+  // ── Chain 3: DeepSeek (guaranteed last resort) ───────────────────────
   if (deepseekKey) {
-    console.log('[ModelProvider] Routing to DeepSeek (last resort)');
-    const dsBody = { ...llmBody, model: 'deepseek-chat' };
-    const dsRes = await fetch(DEEPSEEK_CHAT_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${deepseekKey}`,
-      },
-      body: JSON.stringify(dsBody),
-    });
-
-    if (dsRes.ok) return dsRes;
-    const err = await dsRes.text().catch(() => dsRes.statusText);
-    throw new Error(`DeepSeek API error (${dsRes.status}): ${err}`);
+    try {
+      console.log('[ModelProvider] ▶ DeepSeek Chat (final fallback)...');
+      const dsRes = await fetchWithTimeout(DEEPSEEK_CHAT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${deepseekKey}`,
+        },
+        body: JSON.stringify({ ...llmBody, model: 'deepseek-chat' }),
+      }, 3000); // DeepSeek gets 3s (slightly more for cold start)
+      if (dsRes.ok) { console.log('[ModelProvider] ✓ DeepSeek connected'); return dsRes; }
+      const errText = await dsRes.text().catch(() => dsRes.statusText);
+      console.error(`[ModelProvider] ✗ DeepSeek failed (${dsRes.status}): ${errText}`);
+      throw new Error(`DeepSeek API error (${dsRes.status}): ${errText}`);
+    } catch (err) {
+      console.error('[ModelProvider] ✗ DeepSeek error:', err.message.substring(0, 200));
+      throw new Error(`All providers failed. DeepSeek error: ${err.message}`);
+    }
   }
 
-  throw new Error('No LLM provider API key configured');
+  throw new Error('No LLM provider configured. Set at least one API key: GROQ_API_KEY, NVIDIA_API_KEY, or DEEPSEEK_API_KEY');
 }
 
 module.exports = {

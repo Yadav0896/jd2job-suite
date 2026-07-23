@@ -324,7 +324,7 @@ function AppContent() {
     return <AnswerPanel />;
   };
   const renderConfigModals = () => {
-    return (<>{state.showResumeModal && <ResumeManager />}{state.showJobDescriptionModal && <JobDescriptionInput />}</>);
+    return (<>{state.showResumeModal && <ResumeManager />}{state.showJobDescriptionModal && <JobDescriptionInput />}{state.showAssignmentModal && <AssignmentUploader />}</>);
   };
 
   // 0. Pricing page
@@ -556,6 +556,9 @@ function AppContent() {
                 <button className={`header-btn ${resumeData ? 'has-data' : ''}`} onClick={() => dispatch({ type: 'TOGGLE_RESUME_MODAL' })}>
                   📄 Resume {resumeData && '✓'}
                 </button>
+                <button className={`header-btn ${(state.assignmentDocs || []).length > 0 ? 'has-data' : ''}`} onClick={() => dispatch({ type: 'TOGGLE_ASSIGNMENT_MODAL' })}>
+                  📝 Assignments {(state.assignmentDocs || []).length > 0 && `(${state.assignmentDocs.length})`}
+                </button>
               </>
             )}
 
@@ -683,6 +686,174 @@ function AppContent() {
       {state.showSettingsModal && <SettingsModal />}
       <PostCallAnalyticsModal />
       {showSessionArchive && <SessionArchive onClose={() => setShowSessionArchive(false)} />}
+    </div>
+  );
+}
+
+// ── Assignment Uploader Modal ─────────────────────────────────────────────────
+function AssignmentUploader() {
+  const { state, dispatch } = useApp();
+  const docs = state.assignmentDocs || [];
+  const [isDragging, setIsDragging] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const extractTextFromFile = async (file) => {
+    try {
+      let text = '';
+      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+        const pdfjsLib = await import('pdfjs-dist');
+        const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker.default;
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          fullText += content.items.map(item => item.str).join(' ') + '\n';
+        }
+        text = fullText;
+      } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.toLowerCase().endsWith('.docx')) {
+        const mammoth = await import('mammoth/mammoth.browser');
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.default.extractRawText({ arrayBuffer });
+        text = result.value;
+      } else if (file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt')) {
+        text = await file.text();
+      } else {
+        throw new Error('Unsupported file type. Upload PDF, DOCX, or TXT.');
+      }
+      return text;
+    } catch (err) {
+      throw new Error(`Could not extract text: ${err.message}`);
+    }
+  };
+
+  const handleFile = async (file) => {
+    if (docs.length >= 3) {
+      setError('Maximum 3 assignments allowed. Remove one first.');
+      return;
+    }
+    setIsProcessing(true);
+    setError(null);
+    try {
+      const content = await extractTextFromFile(file);
+      dispatch({ type: 'ADD_ASSIGNMENT_DOC', payload: { name: file.name, content } });
+    } catch (err) {
+      setError(err.message || 'Failed to process file.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files?.length) {
+      Array.from(e.dataTransfer.files).forEach(f => handleFile(f));
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    if (e.target.files?.length) {
+      Array.from(e.target.files).forEach(f => handleFile(f));
+    }
+    e.target.value = null;
+  };
+
+  const removeDoc = (id) => {
+    dispatch({ type: 'REMOVE_ASSIGNMENT_DOC', payload: id });
+  };
+
+  return (
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && dispatch({ type: 'TOGGLE_ASSIGNMENT_MODAL' })}>
+      <div className="post-interview-card" style={{ maxWidth: 580, width: '94vw' }}>
+        <div className="panel-header" style={{ borderBottom: '1px solid var(--border)', padding: '20px' }}>
+          <div className="panel-title-group">
+            <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+              📝 Upload Assignments
+            </h2>
+            <p className="panel-subtitle">Upload up to 3 take-home assignments. The AI will reference your work during interviews.</p>
+          </div>
+          <button className="clear-btn" onClick={() => dispatch({ type: 'TOGGLE_ASSIGNMENT_MODAL' })} style={{ padding: '8px 12px' }}>Close</button>
+        </div>
+
+        <div style={{ padding: '20px' }}>
+          {/* Upload zone */}
+          <div
+            onDrop={handleDrop}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onClick={() => docs.length < 3 && fileInputRef.current?.click()}
+            style={{
+              border: `2px dashed ${isDragging ? 'var(--accent, #e08aae)' : 'var(--border-medium)'}`,
+              borderRadius: 'var(--radius-md)',
+              padding: '24px',
+              textAlign: 'center',
+              cursor: docs.length >= 3 ? 'not-allowed' : 'pointer',
+              backgroundColor: isDragging ? 'var(--accent-light)' : 'var(--bg-input)',
+              transition: 'all 0.2s ease',
+              opacity: docs.length >= 3 ? 0.5 : 1,
+            }}
+          >
+            <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept=".pdf,.docx,.txt" multiple style={{ display: 'none' }} />
+            {isProcessing ? (
+              <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>⏳ Extracting text...</div>
+            ) : (
+              <div>
+                <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>📄</div>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                  {docs.length >= 3 ? 'Maximum 3 assignments reached' : 'Click or drag to upload assignments'}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  PDF, DOCX, or TXT — up to 3 documents
+                </div>
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <div style={{ color: 'var(--error)', fontSize: '0.8rem', marginTop: '10px', textAlign: 'center' }}>{error}</div>
+          )}
+
+          {/* Uploaded assignments list */}
+          {docs.length > 0 && (
+            <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                {`Uploaded (${docs.length}/3)`}
+              </div>
+              {docs.map((doc) => (
+                <div key={doc.id} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  gap: '12px', padding: '12px 16px',
+                  background: 'var(--bg-surface)', border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>📄</span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.name}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{(doc.content || '').length.toLocaleString()} chars extracted</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => removeDoc(doc.id)}
+                    style={{
+                      background: 'none', border: '1px solid var(--border)',
+                      borderRadius: '6px', padding: '4px 10px',
+                      color: 'var(--error)', cursor: 'pointer',
+                      fontSize: '0.75rem', fontWeight: 600,
+                      flexShrink: 0,
+                    }}
+                  >Remove</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
