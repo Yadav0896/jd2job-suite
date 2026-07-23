@@ -851,6 +851,44 @@ app.get('/api/supabase/sessions/:userId', requireAuth, async (req, res) => {
   }
 });
 
+// ── Admin Dashboard ──────────────────────────────────────────────────
+app.get('/api/admin/stats', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Check if user is admin (simple email-based check — replace with proper roles later)
+    const { data: profile } = await supabase.from('profiles').select('id').eq('id', userId).single();
+    if (!profile) return res.status(403).json({ error: 'Forbidden' });
+
+    // Aggregate stats
+    const [users, sessions, transactions] = await Promise.all([
+      supabase.from('profiles').select('id, plan_type', { count: 'exact', head: true }),
+      supabase.from('sessions').select('id, status', { count: 'exact', head: true }),
+      supabase.from('credit_transactions').select('amount, created_at').order('created_at', { ascending: false }).limit(100),
+    ]);
+
+    const totalUsers = users.count || 0;
+    const totalSessions = sessions.count || 0;
+    
+    // Revenue calculation (only positive transactions)
+    const allTxns = transactions.data || [];
+    const revenue = allTxns.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0) * 249; // 1 credit ≈ ₹249
+    const recentTxns = allTxns.slice(0, 10).map(t => ({
+      amount: t.amount,
+      date: t.created_at,
+    }));
+
+    res.json({
+      totalUsers,
+      totalSessions,
+      estimatedRevenue: revenue,
+      recentTransactions: recentTxns,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Interview Prep: Get Next Question ───────────────────────────────
 const { generateNextQuestion } = require('./agents/interviewerAgent');
 

@@ -23,6 +23,7 @@ import CookieConsent from './components/CookieConsent';
 import ThemeToggle from './components/ThemeToggle';
 import ConfirmDialog from './components/ConfirmDialog';
 import { ToastProvider, useToast } from './components/Toast';
+import AdminDashboard from './components/AdminDashboard';
 import { signOut } from './services/supabaseClient';
 import PricingPage from './components/PricingPage';
 import { createOrder, openRazorpayCheckout } from './services/paymentService';
@@ -110,6 +111,7 @@ function AppContent() {
   const [isDemoRunning, setIsDemoRunning]     = useState(false);
   const [showPricing, setShowPricing]         = useState(false);
   const [showSessionArchive, setShowSessionArchive] = useState(false);
+  const [showAdmin, setShowAdmin]             = useState(false);
   const [showOnboarding, setShowOnboarding]       = useState(() => {
     return localStorage.getItem('jd2job_onboarding_done') !== 'true';
   });
@@ -446,6 +448,11 @@ function AppContent() {
     );
   }
 
+  // 3. Admin dashboard
+  if (showAdmin) {
+    return <AdminDashboard onBack={() => setShowAdmin(false)} />;
+  }
+
   // 4. Workspace selector
   if (activeWorkspace === null) {
 
@@ -456,6 +463,7 @@ function AppContent() {
             setActiveWorkspace(mode);
             dispatch({ type: 'SET_PLATFORM_MODE', payload: mode });
           }}
+          onAdmin={() => setShowAdmin(true)}
         />
         {state.showSettingsModal && <SettingsModal />}
       </>

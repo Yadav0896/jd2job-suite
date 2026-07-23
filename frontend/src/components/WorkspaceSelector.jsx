@@ -78,7 +78,7 @@ const ASSISTANTS = [
   }
 ];
 
-export default function WorkspaceSelector({ onSelect }) {
+export default function WorkspaceSelector({ onSelect, onAdmin }) {
   const { state } = useApp();
   const { credits } = state;
   const [hovered, setHovered] = useState(null);
@@ -130,6 +130,14 @@ export default function WorkspaceSelector({ onSelect }) {
               </svg>
               <span>{credits} credits</span>
             </div>
+          )}
+          {onAdmin && (
+            <button onClick={onAdmin} style={{
+              background: 'var(--bg-surface)', border: '1px solid var(--border-medium)',
+              borderRadius: '8px', padding: '5px 12px', color: 'var(--text-muted)',
+              fontSize: '0.78rem', cursor: 'pointer', fontWeight: 600,
+              fontFamily: 'JetBrains Mono, monospace',
+            }} title="Admin Dashboard">📊</button>
           )}
         </div>
       </nav>
