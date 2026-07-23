@@ -658,7 +658,7 @@ export default function AudioControls() {
             const correctedText = correctTechnicalTerms(text);
             dispatch({ type: 'ADD_TRANSCRIPT', payload: { speaker: 'Interviewer', text: correctedText, timestamp: Date.now() } });
             if (sessionIdRef.current) {
-              saveTranscriptToDB({ sessionId: sessionIdRef.current, speaker: 'Interviewer', text: correctedText }).catch(() => {});
+              saveTranscriptToDB({ sessionId: sessionIdRef.current, speaker: 'Interviewer', text: correctedText }).catch(err => console.warn('[Transcript] Interviewer save failed:', err));
             }
             handleInterviewerSpeech(correctedText);
           },
@@ -822,7 +822,7 @@ export default function AudioControls() {
           dispatch({ type: 'SET_PARTIAL_TRANSCRIPT', payload: '' });
           dispatch({ type: 'ADD_TRANSCRIPT', payload: { speaker: 'You', text: correctedText, timestamp: Date.now() } });
           if (sessionIdRef.current) {
-            saveTranscriptToDB({ sessionId: sessionIdRef.current, speaker: 'You', text: correctedText }).catch(() => {});
+            saveTranscriptToDB({ sessionId: sessionIdRef.current, speaker: 'You', text: correctedText }).catch(err => console.warn('[Transcript] User save failed:', err));
           }
           
           // --- Speech Rate (WPM) Calculation ---
@@ -880,7 +880,7 @@ export default function AudioControls() {
               dispatch({ type: 'SET_PARTIAL_TRANSCRIPT', payload: '' });
               dispatch({ type: 'ADD_TRANSCRIPT', payload: { speaker: 'Interviewer', text: correctedText, timestamp: Date.now() } });
               if (sessionIdRef.current) {
-                saveTranscriptToDB({ sessionId: sessionIdRef.current, speaker: 'Interviewer', text: correctedText }).catch(() => {});
+                saveTranscriptToDB({ sessionId: sessionIdRef.current, speaker: 'Interviewer', text: correctedText }).catch(err => console.warn('[Transcript] Interviewer save failed:', err));
               }
               handleInterviewerSpeech(correctedText);
             },
