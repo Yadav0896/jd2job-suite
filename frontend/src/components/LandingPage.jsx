@@ -1,8 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './LandingPage.css';
+import LegalModal from './LegalModal';
 
 const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onShowPricing }) => {
   const rootRef = useRef(null);
+  const [legalPage, setLegalPage] = useState(null); // 'privacy' | 'terms' | 'about'
 
   const handleStart = (e) => {
     if (e) e.preventDefault();
@@ -639,13 +641,15 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
           <div className="foot-top">
             <div className="foot-brand"><a className="brand" href="#top"><span className="mark"><svg className="icon-f"><use href="#i-spark" /></svg></span> Jd2Job</a><p>The job-search copilot — Auto Apply, AI résumés and voice mock interviews.</p></div>
             <div className="foot-col"><h4>Product</h4><a href="#auto-apply">Auto Apply</a><a href="#mock">Mock Interview</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></div>
-            <div className="foot-col"><h4>Company</h4><a href="#">About</a><a href="#">Privacy</a><a href="#">Terms</a><a href="mailto:hello@jd2job.com">Contact</a></div>
+            <div className="foot-col"><h4>Company</h4><a href="#about" onClick={(e) => { e.preventDefault(); setLegalPage('about'); }}>About</a><a href="#privacy" onClick={(e) => { e.preventDefault(); setLegalPage('privacy'); }}>Privacy</a><a href="#terms" onClick={(e) => { e.preventDefault(); setLegalPage('terms'); }}>Terms</a><a href="mailto:hello@jd2job.com">Contact</a></div>
             <div className="news"><h4>The short list</h4><p>Job-search notes and product changes. A few times a year, never more.</p><form onSubmit={(e) => e.preventDefault()}><label htmlFor="lp-email">Email address</label><input id="lp-email" type="email" placeholder="you@email.com" autoComplete="email" required /><button className="btn btn-primary" type="submit" aria-label="Subscribe" style={{ padding: '12px 14px' }}><svg className="icon"><use href="#i-arrow" /></svg></button></form></div>
           </div>
           <div className="foot-mark" aria-hidden="true">Jd2Job</div>
           <div className="foot-bottom"><span>© {new Date().getFullYear()} Jd2Job. Made with care.</span><div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}><a className="lk" href="#top" style={{ fontFamily: 'var(--mono)', fontSize: '.76rem', display: 'inline-flex', gap: '7px', alignItems: 'center' }}><svg className="icon" style={{ width: '14px', height: '14px' }}><use href="#i-arrow" /></svg> Back to top</a><div className="socials"><a href="#" aria-label="X / Twitter"><svg className="icon"><use href="#i-twitter" /></svg></a><a href="#" aria-label="LinkedIn"><svg className="icon"><use href="#i-linkedin" /></svg></a><a href="#" aria-label="GitHub"><svg className="icon"><use href="#i-github" /></svg></a></div></div></div>
         </div>
       </footer>
+
+      {legalPage && <LegalModal page={legalPage} onClose={() => setLegalPage(null)} />}
     </div>
   );
 };
