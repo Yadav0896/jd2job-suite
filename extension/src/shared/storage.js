@@ -5,7 +5,9 @@ const CONFIG_KEYS = [
   'firstName', 'lastName', 'email', 'phone', 'phoneCountryCode', 'city',
   'yearsOfExperience', 'maxYearsRequired', 'blacklistKeywords', 'autoNextPage', 'expectedSalary',
   'visaSponsorship', 'legallyAuthorized', 'willingToRelocate', 'driversLicense',
-  'apiKey', 'aiAnswers', 'aiResumeText', 'aiTailorResume'
+  'apiKey', 'aiAnswers', 'aiResumeText', 'aiTailorResume',
+  'linkedin', 'github', 'portfolio', 'noticePeriod', 'gender', 'race', 'veteran',
+  'disability', 'jobSearchTitle', 'postalCode', 'dailyCapEnabled', 'dailyCapLimit'
 ];
 
 const LOCAL_KEYS = [
@@ -52,3 +54,8 @@ async function migrateApiKeyToLocal() {
     console.error('Migration error:', e);
   }
 }
+
+// Aliases for exported names
+const getConfig = loadConfig;
+const setConfig = saveConfig;
+const migrateApiKey = migrateApiKeyToLocal;

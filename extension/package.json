@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "eslint *.js src/**/*.js",
     "lint:fix": "eslint *.js src/**/*.js --fix",
-    "check": "node --check popup.js && node --check background.js && node --check content-simple.js && node --check content-portal.js && node --check api.js && node --check popup-improvements.js && node --check src/shared/utils.js && node --check src/shared/dom.js && node --check src/shared/ai.js && node --check src/shared/api-client.js && node --check src/shared/storage.js"
+    "check": "node --check popup.js && node --check background.js && node --check content-simple.js && node --check content-portal.js && node --check popup-improvements.js && node --check src/shared/utils.js && node --check src/shared/dom.js && node --check src/shared/ai.js && node --check src/shared/api-client.js && node --check src/shared/storage.js"
   },
   "devDependencies": {
     "eslint": "^8.57.0"

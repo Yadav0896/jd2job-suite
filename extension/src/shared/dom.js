@@ -89,3 +89,30 @@ async function fillInput(input, value) {
 function isVisible(el) {
   return el && el.offsetParent !== null;
 }
+
+// Wait for DOM to settle (no mutations for ms)
+async function waitForStableDOM(ms = 1000) {
+  return new Promise(resolve => {
+    let timer;
+    const observer = new MutationObserver(() => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        observer.disconnect();
+        resolve();
+      }, ms);
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+    timer = setTimeout(() => { observer.disconnect(); resolve(); }, ms);
+  });
+}
+
+// Query selector with stability wait
+async function querySelectorAllStable(selector, timeout = 5000) {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const els = document.querySelectorAll(selector);
+    if (els.length > 0) return [...els];
+    await wait(300);
+  }
+  return [];
+}

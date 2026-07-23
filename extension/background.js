@@ -62,7 +62,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       } else if (message.type === 'syncNow') {
         const result = await syncJobsToCloud();
         sendResponse({ success: !result.error, ...result });
-      } else if (message.type === 'jobApplied' || message.type === 'updateCount' || message.type === 'updateSkippedCount' || message.type === 'botStarted' || message.type === 'botStopped') {
+      } else if (message.type === 'jobApplied' || message.type === 'updateCount' || message.type === 'updateSkippedCount' || message.type === 'botStarted' || message.type === 'botStopped' || message.type === 'updateStatus') {
         if (message.type === 'jobApplied') {
           syncJobsToCloud(); // fire and forget
         }

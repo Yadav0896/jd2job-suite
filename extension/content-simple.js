@@ -2824,7 +2824,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
 
         // Start main loop (don't await - let it run in background)
-        mainLoop();
+        mainLoop().catch(err => console.error('[AutoApply] Main loop crashed:', err.message));
       } else if (request.action === 'stop') {
         isRunning = false;
         userExplicitlyClickedStart = false; // Clear security flag
