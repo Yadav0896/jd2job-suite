@@ -19,6 +19,10 @@ import AuthPage from './components/AuthPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import Jd2JobDashboard from './components/Jd2JobDashboard';
 import OnboardingTour from './components/OnboardingTour';
+import CookieConsent from './components/CookieConsent';
+import ThemeToggle from './components/ThemeToggle';
+import ConfirmDialog from './components/ConfirmDialog';
+import { ToastProvider, useToast } from './components/Toast';
 import { signOut } from './services/supabaseClient';
 import PricingPage from './components/PricingPage';
 import { createOrder, openRazorpayCheckout } from './services/paymentService';
@@ -566,6 +570,7 @@ function AppContent() {
           </div>
 
           <div className="header-actions">
+            <ThemeToggle />
             {state.credits > 0 && (
               <div className="selector-credits-chip" onClick={() => setShowPricing(true)} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', padding: '4px 12px', height: '32px', cursor: 'pointer' }}>
                 <span className="selector-credits-icon">⚡</span>
@@ -902,7 +907,10 @@ function AssignmentUploader() {
 export default function App() {
   return (
     <AppProvider>
-      <AppContent />
+      <ToastProvider>
+        <AppContent />
+        <CookieConsent />
+      </ToastProvider>
     </AppProvider>
   );
 }
