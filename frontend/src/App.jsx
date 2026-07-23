@@ -22,7 +22,8 @@ import OnboardingTour from './components/OnboardingTour';
 import CookieConsent from './components/CookieConsent';
 import ThemeToggle from './components/ThemeToggle';
 import ConfirmDialog from './components/ConfirmDialog';
-import { ToastProvider, useToast } from './components/Toast';
+import { ToastProvider } from './components/Toast';
+import SupportWidget from './components/SupportWidget';
 import AdminDashboard from './components/AdminDashboard';
 import { signOut } from './services/supabaseClient';
 import PricingPage from './components/PricingPage';
@@ -918,6 +919,7 @@ export default function App() {
       <ToastProvider>
         <AppContent />
         <CookieConsent />
+        <SupportWidget />
       </ToastProvider>
     </AppProvider>
   );

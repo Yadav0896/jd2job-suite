@@ -853,6 +853,41 @@ app.get('/api/supabase/sessions/:userId', requireAuth, async (req, res) => {
 
 // ── Admin Dashboard ──────────────────────────────────────────────────
 app.get('/api/admin/stats', requireAuth, async (req, res) => {
+
+// ── Referral reward: credit referrer when new user signs up ─────────
+app.post('/api/referral/claim', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { data: profile } = await supabase.from('profiles').select('referred_by, credits').eq('id', userId).single();
+    
+    if (!profile?.referred_by) {
+      return res.json({ claimed: false, reason: 'No referrer' });
+    }
+
+    // Check if already claimed
+    const { data: existing } = await supabase.from('credit_transactions')
+      .select('id').eq('user_id', profile.referred_by).eq('reason', 'referral_bonus').eq('metadata->>referred_user', userId).maybeSingle();
+    
+    if (existing) return res.json({ claimed: false, reason: 'Already claimed' });
+
+    // Credit referrer 2 credits
+    const { data: referrer } = await supabase.from('profiles').select('credits').eq('id', profile.referred_by).single();
+    if (!referrer) return res.json({ claimed: false, reason: 'Referrer not found' });
+
+    await supabase.from('profiles').update({ credits: referrer.credits + 2, updated_at: new Date().toISOString() }).eq('id', profile.referred_by);
+    await supabase.from('credit_transactions').insert({
+      user_id: profile.referred_by, amount: 2, reason: 'referral_bonus',
+      metadata: { referred_user: userId },
+    });
+
+    res.json({ claimed: true, message: 'Referral credited!' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Admin Dashboard ──────────────────────────────────────────────────
+app.get('/api/admin/stats', requireAuth, async (req, res) => {
   try {
     const userId = req.user.id;
     

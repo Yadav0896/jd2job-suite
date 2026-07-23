@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './LandingPage.css';
 import LegalModal from './LegalModal';
+import SupportWidget from './SupportWidget';
 
 const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onShowPricing }) => {
   const rootRef = useRef(null);
@@ -650,6 +651,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
       </footer>
 
       {legalPage && <LegalModal page={legalPage} onClose={() => setLegalPage(null)} />}
+      <SupportWidget />
     </div>
   );
 };
