@@ -3,6 +3,26 @@ import { useApp } from '../context/AppContext';
 import { getSession } from '../services/supabaseClient';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const LOCAL_SESSIONS_KEY = 'jd2job_local_sessions';
+
+function loadLocalSessions() {
+  try {
+    const raw = localStorage.getItem(LOCAL_SESSIONS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveSessionLocally(sessionData) {
+  try {
+    const sessions = loadLocalSessions();
+    // Avoid duplicates
+    const idx = sessions.findIndex(s => s.id === sessionData.id);
+    if (idx >= 0) sessions[idx] = sessionData;
+    else sessions.unshift(sessionData);
+    // Cap at 50 sessions
+    localStorage.setItem(LOCAL_SESSIONS_KEY, JSON.stringify(sessions.slice(0, 50)));
+  } catch { /* localStorage full/unavailable */ }
+}
 
 function formatDate(ts) {
   try { return new Date(ts).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }); }
@@ -39,16 +59,32 @@ export default function SessionArchive({ onClose }) {
       const session = await getSession();
       const token = session?.access_token;
       const userId = state.user?.id;
-      if (!userId) throw new Error('Not logged in');
+      
+      if (userId) {
+        try {
+          const res = await fetch(`${API_BASE}/api/supabase/sessions/${userId}`, {
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.length > 0) {
+              setSessions(data);
+              setLoading(false);
+              return;
+            }
+          }
+        } catch { /* Supabase unavailable — fall through to local */ }
+      }
 
-      const res = await fetch(`${API_BASE}/api/supabase/sessions/${userId}`, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-      });
-      if (!res.ok) throw new Error('Failed to load sessions');
-      const data = await res.json();
-      setSessions(data || []);
+      // Fallback: load from localStorage
+      const localSessions = loadLocalSessions();
+      setSessions(localSessions);
+      if (localSessions.length === 0) setError('No saved sessions found. Transcripts are saved locally.');
     } catch (e) {
-      setError(e.message);
+      // Last resort: localStorage
+      const localSessions = loadLocalSessions();
+      setSessions(localSessions);
+      if (localSessions.length === 0) setError('No saved sessions found.');
     } finally {
       setLoading(false);
     }

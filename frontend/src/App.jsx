@@ -101,6 +101,27 @@ function AppContent() {
   const [showSessionArchive, setShowSessionArchive] = useState(false);
   const demoTimeoutRef                        = useRef(null);
 
+  // Auto-save transcripts to localStorage when session ends (local fallback)
+  useEffect(() => {
+    if (isPostModalOpen && transcripts.length > 0) {
+      try {
+        const key = 'jd2job_local_sessions';
+        const raw = localStorage.getItem(key);
+        const sessions = raw ? JSON.parse(raw) : [];
+        sessions.unshift({
+          id: `local_${Date.now()}`,
+          created_at: new Date().toISOString(),
+          status: 'completed',
+          transcript_count: transcripts.length,
+          transcripts: transcripts.slice(-200), // cap at 200 entries
+          score: prepAnalysis?.overall || null,
+          local: true,
+        });
+        localStorage.setItem(key, JSON.stringify(sessions.slice(0, 50)));
+      } catch { /* ignore */ }
+    }
+  }, [isPostModalOpen]);
+
   // When Supabase auth resolves → leave auth page automatically
   useEffect(() => {
     if (isAuthenticated && showAuth) {
