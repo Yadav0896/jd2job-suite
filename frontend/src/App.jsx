@@ -18,6 +18,7 @@ import InterviewerPreview from './components/InterviewerPreview';
 import AuthPage from './components/AuthPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import Jd2JobDashboard from './components/Jd2JobDashboard';
+import OnboardingTour from './components/OnboardingTour';
 import { signOut } from './services/supabaseClient';
 import PricingPage from './components/PricingPage';
 import { createOrder, openRazorpayCheckout } from './services/paymentService';
@@ -103,6 +104,9 @@ function AppContent() {
   const [isDemoRunning, setIsDemoRunning]     = useState(false);
   const [showPricing, setShowPricing]         = useState(false);
   const [showSessionArchive, setShowSessionArchive] = useState(false);
+  const [showOnboarding, setShowOnboarding]       = useState(() => {
+    return localStorage.getItem('jd2job_onboarding_done') !== 'true';
+  });
   const demoTimeoutRef                        = useRef(null);
 
   // Persist key state across refreshes
@@ -723,6 +727,7 @@ function AppContent() {
       {state.showSettingsModal && <SettingsModal />}
       <PostCallAnalyticsModal />
       {showSessionArchive && <SessionArchive onClose={() => setShowSessionArchive(false)} />}
+      {showOnboarding && <OnboardingTour onComplete={() => setShowOnboarding(false)} />}
     </div>
   );
 }
