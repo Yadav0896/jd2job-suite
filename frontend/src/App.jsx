@@ -92,7 +92,9 @@ function AppContent() {
 
   // ── ALL hooks must be at the top — no exceptions ─────────────────────────
   const [showLanding, setShowLanding]         = useState(() => {
-    return localStorage.getItem('jd2job_showLanding') !== 'false' && !state.isAuthenticated;
+    // Skip landing only if user is logged in AND has an active workspace session
+    const savedWorkspace = localStorage.getItem('jd2job_activeWorkspace');
+    return !(state.isAuthenticated && savedWorkspace);
   });
   const [showAuth, setShowAuth]               = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState(() => {
@@ -109,10 +111,7 @@ function AppContent() {
   });
   const demoTimeoutRef                        = useRef(null);
 
-  // Persist key state across refreshes
-  useEffect(() => {
-    localStorage.setItem('jd2job_showLanding', showLanding);
-  }, [showLanding]);
+  // Persist workspace state across refreshes
   useEffect(() => {
     if (activeWorkspace) {
       localStorage.setItem('jd2job_activeWorkspace', activeWorkspace);
