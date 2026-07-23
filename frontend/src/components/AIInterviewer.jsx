@@ -77,21 +77,43 @@ export default function AIInterviewer({
       agentRef.current = null;
     }
 
-    const systemPrompt = `You are a warm, human interviewer on a live voice call, conducting a ${difficulty} ${type} interview for a ${role} position.
-Candidate's Resume: ${state.resumeData || 'Not provided'}
-Job Description: ${state.jobDescription || 'Not provided'}
+    const resumeText = state.resumeData || '';
+    const jdText = state.jobDescription || '';
+    const hasContext = resumeText.length > 50 || jdText.length > 50;
 
-How to behave:
-1. Talk like a real person on a call — short, natural turns. Never more than 2 sentences before letting the candidate speak.
-2. Ask exactly ONE question at a time, then stop and listen. Keep questions under 25 words.
-3. React to each answer in a few natural words ("Nice, that scaling point lands.", "Got it, makes sense.") then move on.
-4. Cover exactly 5 questions total, increasing in depth, then wrap up warmly and say goodbye.
-5. Never output markdown, bullet lists, emojis, or stage directions — only words that can be spoken aloud.`;
+    const systemPrompt = `You are a professional ${type} interviewer conducting a live voice interview for a ${role} role (${difficulty} level).
+
+${hasContext ? `CANDIDATE'S RESUME (for personalized questions):
+"""${resumeText.substring(0, 3000)}"""
+
+JOB DESCRIPTION:
+"""${jdText.substring(0, 3000)}"""` : 'No resume or JD provided — ask general interview questions.'}
+
+## YOUR PERSONALITY
+- Warm, professional, and encouraging. Like a senior colleague, not a robot.
+- React naturally to answers: "That's a solid example." / "Interesting approach." / "Tell me more about that."
+- If the candidate struggles, give them a gentle nudge or rephrase the question.
+
+## HOW TO INTERVIEW
+- Ask ONE question at a time. Keep it under 30 words. Then STOP and LISTEN.
+- Listen to the candidate's answer carefully. Your next question should REFERENCE what they just said.
+- If they mention a specific project, technology, or experience — dig deeper into that.
+- Start broad, then go deeper based on their answers. Adapt — don't follow a script.
+- After 4-6 meaningful exchanges, wrap up warmly: "Thanks so much for your time — I've learned a lot about your background. Best of luck with the next steps!"
+- NEVER output markdown, bullet points, emojis, stage directions, or text formatting. Only speak words aloud.`;
+
+    // Build a personalized greeting
+    let greeting = `Hi there! I'll be doing your ${role} interview today. `;
+    if (resumeText.length > 50) {
+      greeting += `I've reviewed your background — impressive experience. Let's jump right in: can you walk me through your most relevant experience for this role?`;
+    } else {
+      greeting += `Let's get started — tell me a bit about yourself and your background.`;
+    }
 
     const agent = new DeepgramVoiceAgent({
       apiKey: apiKey || 'proxy-key',
       systemPrompt,
-      greeting: `Hi, great to meet you! I'll be interviewing you for the ${role} position today. Let's dive right in — can you tell me a little about yourself?`,
+      greeting,
       llmModel,
       ttsModel: voiceModel,
       onTranscript: (text, isFinal) => {
@@ -100,7 +122,6 @@ How to behave:
           setMessages(prev => {
             const last = prev[prev.length - 1];
             if (last && last.sender === 'user') {
-              // Append to existing user message
               return [...prev.slice(0, -1), { sender: 'user', text: last.text + ' ' + text }];
             }
             return [...prev, { sender: 'user', text }];
@@ -147,7 +168,6 @@ How to behave:
     agentRef.current = agent;
     agent.connect().then(connected => {
       if (connected) {
-        // Wait for manual start click
         setIsVoiceActive(false);
       }
     });
@@ -162,7 +182,13 @@ How to behave:
 
     const agent = new DeepgramVoiceAgent({
       apiKey: apiKey || 'proxy-key',
-      systemPrompt: `You are a professional interviewer on a live voice call. You already asked: "${firstQuestionText}". Listen to the candidate's answer, give ONE short sentence of natural feedback, then invite them to click Next. Keep every turn under 2 sentences. Only speak words that can be said aloud — no markdown, lists, or emojis.`,
+      systemPrompt: `You are a professional ${type} interviewer. You just asked: "${firstQuestionText}". 
+
+Listen to the candidate's answer. Then:
+1. Give ONE short, natural response (max 2 sentences) — acknowledge their answer, maybe ask a brief follow-up
+2. Then say: "Ready for the next question when you are."
+3. Keep it conversational — sound like a real interviewer
+4. NO markdown, bullet points, emojis, or stage directions`,
       greeting: firstQuestionText,
       llmModel,
       ttsModel: voiceModel,
@@ -453,11 +479,51 @@ Provide a detailed evaluation and return JSON in this exact format:
 
   // 1. Setup Mode
   if (isSetupActive) {
+    const hasResume = (state.resumeData || '').length > 50;
+    const hasJD = (state.jobDescription || '').length > 50;
+    const isReady = hasResume || hasJD;
+
     return (
       <div className="ai-interviewer-wrapper">
         <div className="setup-card">
-          <h2 className="setup-title">Configure Mock Practice</h2>
-          <p className="setup-subtitle">Choose options to calibrate the AI interviewer tailored to your background.</p>
+          <div style={{ textAlign: 'center', marginBottom: 24 }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>🎯</div>
+            <h2 className="setup-title">Mock Interview Practice</h2>
+            <p className="setup-subtitle" style={{ textAlign: 'center', maxWidth: 500, margin: '0 auto' }}>
+              The AI interviewer adapts to your resume and speaks naturally. 
+              Upload your resume first for personalized questions.
+            </p>
+          </div>
+
+          {/* Context status */}
+          <div style={{ 
+            display: 'flex', gap: 12, marginBottom: 24, 
+            padding: '14px 18px', borderRadius: 12,
+            background: 'var(--bg-surface)', border: '1px solid var(--border)',
+          }}>
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Resume</div>
+              <div style={{ fontSize: '1.2rem' }}>{hasResume ? '✅' : '⬜'}</div>
+            </div>
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Job Description</div>
+              <div style={{ fontSize: '1.2rem' }}>{hasJD ? '✅' : '⬜'}</div>
+            </div>
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4 }}>Assignment</div>
+              <div style={{ fontSize: '1.2rem' }}>{(state.assignmentDocs || []).length > 0 ? '✅' : '⬜'}</div>
+            </div>
+          </div>
+
+          {!isReady && (
+            <div style={{ 
+              padding: '12px 16px', borderRadius: 10, marginBottom: 20,
+              background: 'var(--warning-light)', border: '1px solid rgba(245,158,11,.2)',
+              color: 'var(--warning)', fontSize: '0.82rem', textAlign: 'center',
+            }}>
+              ⚠️ Upload your resume (📄 button in header) for a mock interview tailored to your real experience.
+            </div>
+          )}
 
           <div className="setup-grid">
             <div className="setup-group">
@@ -467,7 +533,7 @@ Provide a detailed evaluation and return JSON in this exact format:
                 value={role} 
                 onChange={(e) => setRole(e.target.value)} 
                 className="setup-input"
-                placeholder="e.g. Frontend React Developer"
+                placeholder="e.g. Senior Frontend Engineer"
               />
             </div>
 
@@ -477,30 +543,53 @@ Provide a detailed evaluation and return JSON in this exact format:
                 <option value="Technical">Technical (Coding & Architecture)</option>
                 <option value="Behavioral">Behavioral (STAR Method)</option>
                 <option value="System Design">System Design</option>
+                <option value="Mixed">Mixed (Technical + Behavioral)</option>
               </select>
             </div>
 
             <div className="setup-group">
-              <label className="setup-label">Difficulty</label>
+              <label className="setup-label">Experience Level</label>
               <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="setup-select">
-                <option value="easy">Junior</option>
-                <option value="medium">Mid-Level</option>
-                <option value="hard">Senior / Staff</option>
+                <option value="easy">Junior (0-2 years)</option>
+                <option value="medium">Mid-Level (3-6 years)</option>
+                <option value="hard">Senior / Staff (7+ years)</option>
               </select>
             </div>
 
             <div className="setup-group">
               <label className="setup-label">Practice Mode</label>
               <select value={mode} onChange={(e) => setMode(e.target.value)} className="setup-select">
-                <option value="conversational">🎙️ Speech-to-Speech (Human Style)</option>
-                <option value="step">🖱️ Step-by-Step Practice</option>
+                <option value="conversational">🎙️ Voice Conversation (Natural)</option>
+                <option value="step">📝 Step-by-Step (Text + Voice)</option>
               </select>
             </div>
           </div>
 
-          <button onClick={handleStartSession} className="start-btn">
-            🚀 Initialize AI Interviewer
+          {agentError && (
+            <div style={{ 
+              padding: '12px 16px', borderRadius: 10, marginBottom: 20,
+              background: 'var(--error-light)', border: '1px solid rgba(239,68,68,.2)',
+              color: 'var(--error)', fontSize: '0.82rem',
+            }}>
+              {agentError}
+            </div>
+          )}
+
+          <button 
+            onClick={handleStartSession} 
+            className="start-btn"
+            disabled={isLoadingQuestion}
+          >
+            {isLoadingQuestion ? '⏳ Preparing...' : isReady
+              ? `🚀 Start ${mode === 'conversational' ? 'Voice' : 'Step-by-Step'} Interview`
+              : '🚀 Start Practice (No Resume — General Questions)'}
           </button>
+
+          <p style={{ textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 12 }}>
+            {mode === 'conversational' 
+              ? 'You\'ll speak naturally with the AI. It listens, responds, and adapts. Allow microphone access.'
+              : 'Questions appear one at a time. Answer by speaking or typing. Get scored after each.'}
+          </p>
         </div>
       </div>
     );
@@ -635,7 +724,7 @@ Provide a detailed evaluation and return JSON in this exact format:
             <div className="question-header">
               <span className="question-index">🎙️ Conversational Speech Session</span>
               <span style={{ fontSize: '.78rem', background: 'var(--accent-light, rgba(224,138,174,.1))', color: 'var(--accent, #e08aae)', padding: '3px 10px', borderRadius: '8px', fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '.02em' }}>
-                Continuous S2S
+                {localIsConnected ? (isVoiceActive ? '🎙️ Active' : '⏸ Paused') : '🔴 Offline'}
               </span>
             </div>
 
