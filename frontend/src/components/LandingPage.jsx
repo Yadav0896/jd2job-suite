@@ -461,7 +461,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
                       <div className="rail"><span className="ri on"><svg className="icon"><use href="#i-bolt" /></svg></span><span className="ri"><svg className="icon"><use href="#i-doc" /></svg></span><span className="ri"><svg className="icon"><use href="#i-mic" /></svg></span><span className="sp"></span><span className="ri"><svg className="icon"><use href="#i-shield" /></svg></span></div>
                       <div className="app">
                         <div className="app-top"><span className="t">Auto Apply · LinkedIn</span><span className="rec"><span className="d"></span> RUNNING</span><span className="timer">12:48</span></div>
-                        <div className="qb"><div className="who">Job · Easy Apply</div><p>Senior Frontend Engineer — Razorpay · Bengaluru · ₹28–36 LPA</p></div>
+                        <div className="qb"><div className="who">Job · Easy Apply</div><p>Senior Frontend Engineer — FinTech Co · Bengaluru · ₹28–36 LPA</p></div>
                         <div className="wave wave-hero"></div>
                         <div className="coach"><div className="coach-h"><svg className="icon"><use href="#i-spark" /></svg> AI tailoring · ATS</div>
                           <div className="sug"><span className="tag s">JD parsed</span><p>14 requirements mapped to your résumé — React, TypeScript, design systems.</p></div>
@@ -473,7 +473,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
                     </div>
                   </div>
                 </div>
-                <div className="hud"><div className="hh"><svg className="icon"><use href="#i-spark" /></svg> Live dashboard</div><div className="gs"><b>38 sent</b> today — 6 recruiter views.</div><div className="gs"><b>Next:</b> Frontend Lead @ Swiggy — tailoring now.</div></div>
+                <div className="hud"><div className="hh"><svg className="icon"><use href="#i-spark" /></svg> Live dashboard</div><div className="gs"><b>38 sent</b> today — 6 recruiter views.</div><div className="gs"><b>Next:</b> Frontend Lead @ Tech Unicorn — tailoring now.</div></div>
                 <div className="chip c1"><span className="ring"><span>96</span></span><div>ATS match<small>to this JD</small></div></div>
                 <div className="chip c2"><span className="ic m"><svg className="icon"><use href="#i-doc" /></svg></span><div>Screening Qs<small>auto-answered</small></div></div>
                 <div className="chip c3"><span className="ic b"><svg className="icon"><use href="#i-check" /></svg></span><div>Interview · Acme<small>scheduled Tue</small></div></div>
@@ -511,7 +511,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
                 <div className="layer screen-l">
                   <div className="sbar"><span className="d"></span> Auto Apply · running</div>
                   <div className="swave"></div>
-                  <div className="sline"><span className="tag">Applied</span>Senior Frontend Engineer @ Razorpay — résumé v38 tailored · ATS 96</div>
+                  <div className="sline"><span className="tag">Applied</span>Senior Frontend Engineer @ FinTech Co — résumé v38 tailored · ATS 96</div>
                 </div>
                 <div className="float-l"><span className="ic"><svg className="icon"><use href="#i-spark" /></svg></span><div>AI tailoring<small>résumé v38 · ATS 96</small></div></div>
                 <div className="float-l b2"><span className="ic"><svg className="icon"><use href="#i-check" /></svg></span><div>Dashboard<small>38 sent · 6 replies</small></div></div>
@@ -594,12 +594,12 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
           <div className="wrap">
             <div className="head center reveal"><span className="kicker" style={{ justifyContent: 'center' }}><span className="idx">(06)</span> In their words</span><h2 className="split">Real people. <span className="serif">Real offers.</span></h2><p className="lead">Thousands job hunt with Jd2Job in their corner. Here's what changed.</p></div>
             <div className="twall">
-              <figure className="tcard reveal" data-cursor="Read"><div className="stars" aria-label="5 out of 5">★★★★★</div><q>Auto Apply sent 120 tailored applications in two weeks. I stopped doom-scrolling LinkedIn and started interviewing.</q><figcaption className="who"><span className="av">SC</span><div><b>Sarah Chen</b><small>Software Engineer · Google</small></div></figcaption></figure>
-              <figure className="tcard reveal" data-cursor="Read"><div className="stars" aria-label="5 out of 5">★★★★★</div><q>Every application went out with a résumé rewritten for that exact JD. Recruiters started quoting it back to me on calls.</q><figcaption className="who"><span className="av">AR</span><div><b>Alex Rivera</b><small>Product Designer · Figma</small></div></figcaption></figure>
-              <figure className="tcard reveal" data-cursor="Read"><div className="stars" aria-label="5 out of 5">★★★★★</div><q>The mock interviewer replies instantly — a few minutes in I genuinely forgot it wasn't a person.</q><figcaption className="who"><span className="av">ER</span><div><b>Emily Rodriguez</b><small>Principal PM · Stripe</small></div></figcaption></figure>
-              <figure className="tcard reveal" data-cursor="Read"><div className="stars" aria-label="5 out of 5">★★★★★</div><q>Screening questions used to eat my whole evening. Now I review a dashboard over coffee and it's done.</q><figcaption className="who"><span className="av">DO</span><div><b>Daniel Okafor</b><small>Solutions Architect · Snowflake</small></div></figcaption></figure>
-              <figure className="tcard reveal" data-cursor="Read"><div className="stars" aria-label="5 out of 5">★★★★★</div><q>I used to freeze on "tell me about yourself". Twenty voice mocks later it comes out like second nature.</q><figcaption className="who"><span className="av">MK</span><div><b>Maya Krishnan</b><small>Data Scientist · Meta</small></div></figcaption></figure>
-              <figure className="tcard reveal" data-cursor="Read"><div className="stars" aria-label="5 out of 5">★★★★★</div><q>Zero replies to five interviews in a month. The ATS score told me exactly what was holding my résumé back.</q><figcaption className="who"><span className="av">JT</span><div><b>James Tan</b><small>Account Exec · Salesforce</small></div></figcaption></figure>
+              <figure className="tcard reveal" data-cursor="Read"><div className="stars" aria-label="5 out of 5">★★★★★</div><q>Auto Apply sent 120 tailored applications in two weeks. I stopped doom-scrolling LinkedIn and started interviewing.</q><figcaption className="who"><span className="av">SC</span><div><b>Sarah Chen</b><small>Software Engineer · SaaS Company</small></div></figcaption></figure>
+              <figure className="tcard reveal" data-cursor="Read"><div className="stars" aria-label="5 out of 5">★★★★★</div><q>Every application went out with a résumé rewritten for that exact JD. Recruiters started quoting it back to me on calls.</q><figcaption className="who"><span className="av">AR</span><div><b>Alex Rivera</b><small>Product Designer · Design Studio</small></div></figcaption></figure>
+              <figure className="tcard reveal" data-cursor="Read"><div className="stars" aria-label="5 out of 5">★★★★★</div><q>The mock interviewer replies instantly — a few minutes in I genuinely forgot it wasn't a person.</q><figcaption className="who"><span className="av">ER</span><div><b>Emily Rodriguez</b><small>Principal PM · FinTech Firm</small></div></figcaption></figure>
+              <figure className="tcard reveal" data-cursor="Read"><div className="stars" aria-label="5 out of 5">★★★★★</div><q>Screening questions used to eat my whole evening. Now I review a dashboard over coffee and it's done.</q><figcaption className="who"><span className="av">DO</span><div><b>Daniel Okafor</b><small>Solutions Architect · Cloud Company</small></div></figcaption></figure>
+              <figure className="tcard reveal" data-cursor="Read"><div className="stars" aria-label="5 out of 5">★★★★★</div><q>I used to freeze on "tell me about yourself". Twenty voice mocks later it comes out like second nature.</q><figcaption className="who"><span className="av">MK</span><div><b>Maya Krishnan</b><small>Data Scientist · Tech Startup</small></div></figcaption></figure>
+              <figure className="tcard reveal" data-cursor="Read"><div className="stars" aria-label="5 out of 5">★★★★★</div><q>Zero replies to five interviews in a month. The ATS score told me exactly what was holding my résumé back.</q><figcaption className="who"><span className="av">JT</span><div><b>James Tan</b><small>Account Executive · Enterprise Firm</small></div></figcaption></figure>
             </div>
           </div>
         </section>

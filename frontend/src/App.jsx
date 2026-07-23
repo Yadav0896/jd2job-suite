@@ -41,9 +41,9 @@ const DEMO_STEPS = [
   {
     title: 'Greeting & Self-Introduction',
     interviewer: "Hi, thank you for coming in today. Let's start with a quick introduction. Can you tell me a bit about yourself?",
-    reasoning: 'Formulating initial pitch: Specialist React Developer, Stripe dashboard lead developer, strong focus on performance.',
-    answer: 'Hello! Thank you for having me. I am a frontend developer with 5+ years of experience specializing in building highly responsive React applications. Recently, I led the development of Stripe\'s new dashboard, achieving a 30% speedup in render times.',
-    bulletPoints: ['5+ years React experience', 'Led Stripe dashboard development', 'Specialist in app performance & UX'],
+    reasoning: 'Formulating initial pitch: Specialist React Developer, analytics dashboard lead developer, strong focus on performance.',
+    answer: 'Hello! Thank you for having me. I am a frontend developer with 5+ years of experience specializing in building highly responsive React applications. Recently, I led the development of a new analytics dashboard, achieving a 30% speedup in render times.',
+    bulletPoints: ['5+ years React experience', 'Led analytics dashboard development', 'Specialist in app performance & UX'],
     hints: ['Structure with STAR or chronologically', 'Highlight impact (30% speedup)', 'Showcase frontend specialization'],
   },
   {
@@ -271,8 +271,8 @@ function AppContent() {
   // ── Demo controls ─────────────────────────────────────────────────────────
   const startDemo = () => {
     dispatch({ type: 'CLEAR_TRANSCRIPTS' });
-    dispatch({ type: 'SET_JOB_DESCRIPTION', payload: 'Software Engineer at Google. Requires expertise in React, System Design, and performance optimization.' });
-    dispatch({ type: 'SET_RESUME_DATA', payload: '5 years experience. Built Stripe dashboard. Expert in React and state management.' });
+    dispatch({ type: 'SET_JOB_DESCRIPTION', payload: 'Software Engineer at a leading tech company. Requires expertise in React, System Design, and performance optimization.' });
+    dispatch({ type: 'SET_RESUME_DATA', payload: '5 years experience. Built analytics dashboard. Expert in React and state management.' });
     setIsDemoRunning(true);
     setDemoIndex(0);
   };

@@ -292,8 +292,8 @@ export default function AudioControls() {
 
         const qLower = question.toLowerCase();
         if (qLower.includes("yourself") || qLower.includes("introduction") || qLower.includes("intro")) {
-          answerText = "Thanks for having me! So, I'm a frontend developer with about 5 years under my belt, and I really specialize in building highly responsive React applications. Actually, a highlight from my recent work — I led the development of Stripe's new dashboard, and we managed to achieve a 30% speedup in render times, which was pretty exciting.";
-          bulletPoints = ["5+ years React experience", "Led Stripe dashboard development", "Specialist in app performance & UX"];
+          answerText = "Thanks for having me! So, I'm a frontend developer with about 5 years under my belt, and I really specialize in building highly responsive React applications. Actually, a highlight from my recent work — I led the development of a real-time analytics dashboard, and we managed to achieve a 30% speedup in render times, which was pretty exciting.";
+          bulletPoints = ["5+ years React experience", "Led analytics dashboard development", "Specialist in app performance & UX"];
           hints = ["Structure with STAR or chronologically", "Highlight impact (30% speedup)"];
         } else if (qLower.includes("performance") || qLower.includes("10,000") || qLower.includes("optimize") || qLower.includes("lagging")) {
           answerText = "Great question. So, when you're dealing with 10,000 items — the main culprit is usually DOM node count and unnecessary virtual DOM diffing, right? Here's what I'd do: First, I'd implement list virtualization using something like `react-window` so we're only rendering what's actually in the viewport. Then I'd wrap individual items in `React.memo` and use `useMemo` for any heavy sorting or filtering. That combo usually solves it.";
