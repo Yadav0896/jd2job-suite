@@ -90,9 +90,13 @@ function AppContent() {
   } = state;
 
   // ── ALL hooks must be at the top — no exceptions ─────────────────────────
-  const [showLanding, setShowLanding]         = useState(true);
+  const [showLanding, setShowLanding]         = useState(() => {
+    return localStorage.getItem('jd2job_showLanding') !== 'false' && !state.isAuthenticated;
+  });
   const [showAuth, setShowAuth]               = useState(false);
-  const [activeWorkspace, setActiveWorkspace] = useState(null);
+  const [activeWorkspace, setActiveWorkspace] = useState(() => {
+    return localStorage.getItem('jd2job_activeWorkspace') || null;
+  });
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [isFocused, setIsFocused]             = useState(true);
   const [demoIndex, setDemoIndex]             = useState(-1);
@@ -100,6 +104,18 @@ function AppContent() {
   const [showPricing, setShowPricing]         = useState(false);
   const [showSessionArchive, setShowSessionArchive] = useState(false);
   const demoTimeoutRef                        = useRef(null);
+
+  // Persist key state across refreshes
+  useEffect(() => {
+    localStorage.setItem('jd2job_showLanding', showLanding);
+  }, [showLanding]);
+  useEffect(() => {
+    if (activeWorkspace) {
+      localStorage.setItem('jd2job_activeWorkspace', activeWorkspace);
+    } else {
+      localStorage.removeItem('jd2job_activeWorkspace');
+    }
+  }, [activeWorkspace]);
 
   // Auto-save transcripts to localStorage when session ends (local fallback)
   useEffect(() => {
