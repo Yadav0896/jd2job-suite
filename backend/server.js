@@ -638,6 +638,20 @@ const REQUIRED_ENV_VARS = [
   'SUPABASE_SERVICE_ROLE_KEY'
 ];
 
+// ── Health check ─────────────────────────────────────────────────────
+app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+
+// ── Account deletion ─────────────────────────────────────────────────
+app.delete('/api/supabase/account/:userId', requireAuth, async (req, res) => {
+  try {
+    if (req.params.userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+    await supabase.from('profiles').delete().eq('id', req.params.userId);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 server.listen(PORT, () => {
   console.log(`Backend proxy running on http://localhost:${PORT}`);
   
