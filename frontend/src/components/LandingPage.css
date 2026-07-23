@@ -76,7 +76,7 @@
 .lp .nav{pointer-events:auto;display:flex;align-items:center;gap:8px;padding:8px 8px 8px 18px;border-radius:var(--pill);background:rgba(255,255,255,.6);backdrop-filter:saturate(180%) blur(16px);-webkit-backdrop-filter:saturate(180%) blur(16px);border:1px solid rgba(255,255,255,.7);box-shadow:0 12px 34px -16px rgba(20,16,25,.4);transition:.3s}
 .lp .nav.scrolled{background:rgba(255,255,255,.88)}
 .lp .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:1.12rem;letter-spacing:-.02em;margin-right:6px}
-.lp .brand .mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(140deg,var(--berry),var(--berry-700));display:grid;place-items:center;color:#fff;box-shadow:0 6px 14px -6px rgba(145,47,86,.8)}.lp .brand .mark .icon-f{width:15px;height:15px}
+.lp .brand .mark{display:grid;place-items:center}
 .lp .nav-links{display:flex;align-items:center;gap:4px}
 .lp .nav-links a{font-size:.9rem;font-weight:600;color:var(--muted);padding:9px 13px;border-radius:var(--pill);transition:.2s}.lp .nav-links a:hover{color:var(--text);background:rgba(20,16,25,.05)}
 .lp .nav-right{display:flex;align-items:center;gap:6px}

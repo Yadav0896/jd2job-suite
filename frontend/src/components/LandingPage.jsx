@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import './LandingPage.css';
 import LegalModal from './LegalModal';
 import SupportWidget from './SupportWidget';
+import Jd2JobLogo from './Jd2JobLogo';
 
 const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onShowPricing }) => {
   const rootRef = useRef(null);
@@ -412,7 +413,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
 
       <div className="navwrap">
         <header className="nav">
-          <a className="brand" href="#top" aria-label="Jd2Job home"><span className="mark"><svg className="icon-f"><use href="#i-spark" /></svg></span> Jd2Job</a>
+          <a className="brand" href="#top" aria-label="Jd2Job home"><span className="mark"><Jd2JobLogo width={24} height={24} /></span> Jd2Job</a>
           <nav className="nav-links" aria-label="Primary">
             <a href="#auto-apply">Auto Apply</a>
             <a href="#mock">Mock Interview</a>
@@ -640,7 +641,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
       <footer>
         <div className="wrap">
           <div className="foot-top">
-            <div className="foot-brand"><a className="brand" href="#top"><span className="mark"><svg className="icon-f"><use href="#i-spark" /></svg></span> Jd2Job</a><p>The job-search copilot — Auto Apply, AI résumés and voice mock interviews.</p></div>
+            <div className="foot-brand"><a className="brand" href="#top"><span className="mark"><Jd2JobLogo width={24} height={24} /></span> Jd2Job</a><p>The job-search copilot — Auto Apply, AI résumés and voice mock interviews.</p></div>
             <div className="foot-col"><h4>Product</h4><a href="#auto-apply">Auto Apply</a><a href="#mock">Mock Interview</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></div>
             <div className="foot-col"><h4>Company</h4><a href="#about" onClick={(e) => { e.preventDefault(); setLegalPage('about'); }}>About</a><a href="#privacy" onClick={(e) => { e.preventDefault(); setLegalPage('privacy'); }}>Privacy</a><a href="#terms" onClick={(e) => { e.preventDefault(); setLegalPage('terms'); }}>Terms</a><a href="mailto:hello@jd2job.com">Contact</a></div>
             <div className="news"><h4>The short list</h4><p>Job-search notes and product changes. A few times a year, never more.</p><form onSubmit={(e) => { e.preventDefault(); window.open('mailto:hello@jd2job.com?subject=Newsletter%20Signup', '_blank'); }}><label htmlFor="lp-email">Email address</label><input id="lp-email" type="email" placeholder="you@email.com" autoComplete="email" required /><button className="btn btn-primary" type="submit" aria-label="Subscribe" style={{ padding: '12px 14px' }}><svg className="icon"><use href="#i-arrow" /></svg></button></form></div>
