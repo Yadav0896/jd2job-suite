@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { getSession } from '../services/supabaseClient';
 import ModelSelector from './ModelSelector';
+import ConfirmDialog from './ConfirmDialog';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -328,12 +329,65 @@ export default function SettingsModal() {
             </div>
           </div>
 
-          <div className="modal-btn-row" style={{ marginTop: 4 }}>
+          <div className="modal-btn-row" style={{ marginTop: 4, justifyContent: 'space-between' }}>
+            <DeleteAccountButton onClose={handleClose} />
             <button className="btn btn-primary" onClick={handleClose}>Done</button>
           </div>
 
         </div>
       </div>
     </div>
+  );
+}
+
+function DeleteAccountButton({ onClose }) {
+  const { state, dispatch } = useApp();
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleDelete = async () => {
+    setLoading(true);
+    try {
+      const session = await getSession();
+      const token = session?.access_token;
+      if (token && state.user?.id) {
+        // Try backend delete
+        try {
+          await fetch(`${API_BASE}/api/supabase/account/${state.user.id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+        } catch { /* fall through to local cleanup */ }
+      }
+      // Local cleanup
+      localStorage.clear();
+      dispatch({ type: 'CLEAR_AUTH' });
+      window.location.reload();
+    } catch {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <button
+        className="btn btn-danger"
+        onClick={() => setShowConfirm(true)}
+        style={{ fontSize: '0.75rem', padding: '6px 12px' }}
+      >
+        🗑 Delete Account
+      </button>
+      <ConfirmDialog
+        open={showConfirm}
+        title="Delete your account?"
+        message="This permanently deletes all your data — sessions, transcripts, uploaded documents, and profile. This cannot be undone."
+        confirmLabel="Delete permanently"
+        cancelLabel="Keep my account"
+        danger
+        loading={loading}
+        onConfirm={handleDelete}
+        onCancel={() => setShowConfirm(false)}
+      />
+    </>
   );
 }
