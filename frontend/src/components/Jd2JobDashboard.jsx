@@ -243,6 +243,26 @@ ${targetJob.tailored_resume}`;
           >
             ← Exit to Hub
           </button>
+          <button 
+            onClick={() => window.open(`${API_BASE}/api/download`, '_blank')}
+            className="header-btn" 
+            title="Download Jd2Job desktop app for Windows/macOS"
+            style={{ 
+              background: 'linear-gradient(135deg, #b03a6b, #912f56)', 
+              border: 'none',
+              padding: '8px 18px',
+              borderRadius: '8px',
+              color: '#fff',
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            💻 Download Desktop App
+          </button>
           <div>
             <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 700, color: '#10b981' }}>Jd2Job</h1>
             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>LinkedIn Auto-Apply Analytics & Tracker</p>
