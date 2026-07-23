@@ -71,6 +71,14 @@ export class DeepgramVoiceAgent {
     this.playbackContext = null;
     this.currentSource = null;
     this.speechEndTimer = null;
+
+    // Auto-reconnect for resilience during long sessions
+    this._reconnectAttempts = 0;
+    this._maxReconnectAttempts = 5;
+    this._reconnectBaseDelay = 800; // ms — exponential backoff
+    this._reconnectTimer = null;
+    this._intentionalDisconnect = false;
+    this._lastSettings = null; // Replay settings on reconnect
   }
 
   getAgentConfig() {
@@ -101,6 +109,8 @@ export class DeepgramVoiceAgent {
   }
 
   async connect() {
+    this._intentionalDisconnect = false;
+    this._cancelReconnect();
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       console.warn('Already connected to Deepgram Agent');
       return true;
@@ -170,6 +180,12 @@ export class DeepgramVoiceAgent {
             this.connectReject = null;
           }
           this.onDisconnected();
+
+          // Auto-reconnect for unexpected disconnects (network blips, server restarts)
+          if (!this._intentionalDisconnect && event.code !== 1000) {
+            this._attemptReconnect();
+          }
+          this._intentionalDisconnect = false;
         };
       });
     } catch (error) {
@@ -180,6 +196,8 @@ export class DeepgramVoiceAgent {
   }
 
   disconnect() {
+    this._intentionalDisconnect = true;
+    this._cancelReconnect();
     this.teardownMic();
     this.stopPlayback();
     if (this.ws) {
@@ -204,6 +222,52 @@ export class DeepgramVoiceAgent {
     this.isConversationActive = false;
     this.isSpeaking = false;
     this.isListening = false;
+  }
+
+  // ── Auto‑reconnect for long‑session resilience ───────────────────────────
+  _cancelReconnect() {
+    if (this._reconnectTimer) {
+      clearTimeout(this._reconnectTimer);
+      this._reconnectTimer = null;
+    }
+  }
+
+  async _attemptReconnect() {
+    if (this._intentionalDisconnect) return;
+    if (this._reconnectAttempts >= this._maxReconnectAttempts) {
+      console.warn('[Agent] Max reconnect attempts reached — giving up.');
+      this.onError(new Error('Connection lost. Please restart the session.'));
+      return;
+    }
+
+    this._reconnectAttempts++;
+    const delay = this._reconnectBaseDelay * Math.pow(2, this._reconnectAttempts - 1); // 0.8s, 1.6s, 3.2s...
+    console.log(`[Agent] Reconnecting in ${delay}ms (attempt ${this._reconnectAttempts}/${this._maxReconnectAttempts})...`);
+
+    this._reconnectTimer = setTimeout(async () => {
+      this._reconnectTimer = null;
+      try {
+        const ok = await this.connect();
+        if (ok) {
+          console.log('[Agent] ✓ Reconnected successfully');
+          this._reconnectAttempts = 0;
+          // Re-establish audio if mic was active before disconnect
+          if (this.mediaStream && this.mediaStream.active) {
+            await this.setupAudio();
+          }
+          // If conversation was active, restart it
+          if (this.isConversationActive) {
+            this.startConversation();
+          }
+        } else {
+          // connect() already called onError — try again
+          this._attemptReconnect();
+        }
+      } catch (err) {
+        console.warn('[Agent] Reconnect attempt failed:', err.message);
+        this._attemptReconnect();
+      }
+    }, delay);
   }
 
   startKeepalive() {
