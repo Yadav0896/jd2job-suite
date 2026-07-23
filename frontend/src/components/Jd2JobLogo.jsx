@@ -9,68 +9,49 @@ export default function Jd2JobLogo({ width = 36, height = 36, className = '' }) 
       fill="none" 
       xmlns="http://www.w3.org/2000/svg"
       className={className}
-      style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))' }}
+      style={{ filter: 'drop-shadow(0 4px 8px rgba(145,47,86,0.25))' }}
     >
       <defs>
-        {/* Document Gradient */}
-        <linearGradient id="doc-grad" x1="15" y1="30" x2="45" y2="75" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#3b82f6" />
-          <stop offset="100%" stopColor="#06b6d4" />
+        {/* Brand gradient — berry */}
+        <linearGradient id="brand-grad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#b03a6b" />
+          <stop offset="100%" stopColor="#912f56" />
         </linearGradient>
-
-        {/* Briefcase Gradient */}
-        <linearGradient id="case-grad" x1="55" y1="35" x2="85" y2="70" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#64748b" />
-          <stop offset="100%" stopColor="#334155" />
+        {/* Accent gradient — light berry */}
+        <linearGradient id="accent-grad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#e08aae" />
+          <stop offset="100%" stopColor="#b03a6b" />
         </linearGradient>
-
-        {/* Arrow Gradient */}
-        <linearGradient id="arrow-grad" x1="15" y1="75" x2="60" y2="35" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#f97316" />
-          <stop offset="100%" stopColor="#ef4444" />
+        {/* Twilight mint */}
+        <linearGradient id="twilight-grad" x1="0" y1="50" x2="100" y2="50" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#9fc7b8" />
+          <stop offset="100%" stopColor="#eaf2ef" />
         </linearGradient>
       </defs>
 
-      {/* 1. Document Icon (Left) */}
-      <g className="logo-doc">
-        {/* Main page sheet */}
-        <path 
-          d="M 22 28 H 36 L 44 36 V 67 C 44 70 42 72 39 72 H 22 C 19 72 17 70 17 67 V 33 C 17 30 19 28 22 28 Z" 
-          fill="url(#doc-grad)" 
-        />
-        {/* Folded corner */}
-        <path 
-          d="M 36 28 V 36 H 44 Z" 
-          fill="#1e40af" 
-          opacity="0.9"
-        />
-      </g>
+      {/* Background rounded rectangle */}
+      <rect x="4" y="4" width="92" height="92" rx="22" fill="url(#brand-grad)" />
 
-      {/* 2. Briefcase Icon (Right) */}
-      <g className="logo-case">
-        {/* Briefcase handle */}
-        <path 
-          d="M 64 38 V 34 C 64 32.5 65.5 31 67 31 H 73 C 74.5 31 76 32.5 76 34 V 38" 
-          stroke="url(#case-grad)" 
-          strokeWidth="3.5" 
-          fill="none" 
-          strokeLinecap="round"
-        />
-        {/* Briefcase body */}
-        <path 
-          d="M 54 41 C 54 39 55.5 38 57.5 38 H 82.5 C 84.5 38 86 39 86 41 V 66 C 86 68 84.5 69 82.5 69 H 57.5 C 55.5 69 54 68 54 66 Z" 
-          fill="url(#case-grad)" 
-        />
-        {/* Metal buckle latch details */}
-        <rect x="67" y="44" width="6" height="5" rx="1" fill="#cbd5e1" />
-        <rect x="69" y="49" width="2" height="4" rx="0.5" fill="#94a3b8" />
-      </g>
-
-      {/* 3. Swooping Action Arrow (Center) */}
+      {/* Spark / Lightning bolt — represents AI speed & intelligence */}
       <path 
-        d="M 18 73 C 28 85, 46 81, 52 57 L 47 56 L 56 36 L 66 52 L 61 51 C 56 71, 35 77, 18 73 Z" 
-        fill="url(#arrow-grad)" 
+        d="M 58 18 L 40 52 L 50 52 L 36 82 L 62 48 L 52 48 Z" 
+        fill="#fff" 
+        opacity="0.95"
       />
+
+      {/* J — left accent line */}
+      <path 
+        d="M 22 28 L 22 62 C 22 68 27 72 33 72 C 39 72 44 68 44 62 L 44 52" 
+        stroke="url(#twilight-grad)" 
+        strokeWidth="6" 
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.9"
+      />
+
+      {/* Small dot accent */}
+      <circle cx="68" cy="60" r="5" fill="url(#accent-grad)" opacity="0.8" />
+      <circle cx="80" cy="70" r="3" fill="url(#twilight-grad)" opacity="0.6" />
     </svg>
   );
 }
