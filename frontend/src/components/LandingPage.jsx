@@ -203,6 +203,11 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
 
     /* count up */
     const fmt = (n) => (n >= 1000 ? (Math.round(n / 100) / 10) + 'k' : Math.round(n));
+    // Initialize with final values so stats never show 0
+    $$('[data-count]').forEach(el => {
+      const t = +el.dataset.count;
+      el.textContent = t >= 1000 ? fmt(t) : t;
+    });
     const cio = new IntersectionObserver((es) => es.forEach((e) => {
       if (!e.isIntersecting) return;
       const el = e.target, t = +el.dataset.count;
