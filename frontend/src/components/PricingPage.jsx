@@ -50,8 +50,15 @@ const PricingPage = ({
   };
 
   const planFeatures = {
+    auto_apply: [
+      '2,000 Application Credits',
+      'AI-tailored résumé per job',
+      'Auto-apply on LinkedIn',
+      'ATS match scoring',
+      'Dashboard tracking',
+    ],
     base: [
-      '5 Session Credits per month',
+      '2,000 Session Credits per month',
       'Real-time AI suggestions',
       'Context-aware reasoning',
       'Resume & JD alignment',
@@ -65,15 +72,15 @@ const PricingPage = ({
       'Instant activation'
     ],
     monthly_unlimited: [
-      'Unlimited Interview Sessions',
-      'No credit limits',
+      '2,000 Credits + Unlimited Voice',
+      'No credit limits on mocks',
       'Stealth Ghost Mode',
       'Thank-you mail generator',
       'Priority direct support',
       'Up to 40 mins/session'
     ],
     quarterly_unlimited: [
-      'Unlimited Interview Sessions',
+      '2,000 Credits + Unlimited',
       '3-Month billing cycle',
       'Save over 15% vs Monthly',
       'Stealth Ghost Mode',
@@ -158,7 +165,7 @@ const PricingPage = ({
         padding: '0 24px 48px'
       }}>
         {PRICING_PACKAGES.map((plan) => {
-          const isTopupDisabled = plan.id === 'topup' && (!userProfile || userProfile.plan_type !== 'base');
+          const isTopupDisabled = plan.id === 'topup' && (!userProfile || (userProfile.plan_type !== 'base' && userProfile.plan_type !== 'auto_apply'));
           
           return (
             <Tilt3D key={plan.id} tiltMax={4} className="pricing-tilt">
@@ -171,7 +178,8 @@ const PricingPage = ({
                 <div className="card-header">
                   <h2 className="plan-name">{plan.label}</h2>
                   {plan.id === 'quarterly_unlimited' && <p className="plan-badge" style={{ background: 'var(--accent-gradient)' }}>Best Value</p>}
-                  {plan.id === 'topup' && <p className="plan-badge topup-badge" style={{ background: 'rgba(255, 255, 255, 0.15)' }}>Base Booster</p>}
+                  {plan.id === 'auto_apply' && <p className="plan-badge" style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}>Auto-Apply Only</p>}
+                  {plan.id === 'topup' && <p className="plan-badge topup-badge" style={{ background: 'rgba(255, 255, 255, 0.15)' }}>Add-On</p>}
                 </div>
 
                 <div className="price-container">

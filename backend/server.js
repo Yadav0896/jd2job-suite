@@ -1008,6 +1008,7 @@ const razorpayInstance = process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY
 
 // Server-side plan prices (INR) — the client can NEVER set the amount.
 const PLAN_PRICES = {
+  auto_apply: 499,
   base: 999,
   topup: 249,
   monthly_unlimited: 3999,
@@ -1114,39 +1115,46 @@ app.post('/api/payments/verify', requireAuth, async (req, res) => {
     let description = '';
     const now = new Date();
 
-    if (planId === 'base' || amountINR === 999) {
+    if (planId === 'auto_apply' || amountINR === 499) {
+      updates.plan_type = 'auto_apply';
+      updates.credits = (profile.credits || 0) + 2000;
+      updates.plan_started_at = now.toISOString();
+      description = 'Auto-Apply Plan (2000 credits)';
+    } else if (planId === 'base' || amountINR === 999) {
       updates.plan_type = 'base';
-      updates.credits = (profile.credits || 0) + 5;
+      updates.credits = (profile.credits || 0) + 2000;
       updates.plan_started_at = now.toISOString();
       const expires = new Date();
       expires.setMonth(expires.getMonth() + 1);
       updates.plan_expires_at = expires.toISOString();
-      description = 'Base Plan (5 credits)';
+      description = 'Base Plan (2000 credits)';
     } else if (planId === 'topup' || amountINR === 249) {
-      // Check if user is eligible for topup (must be within base plan month)
+      // Check if user is eligible for topup (must be within an active plan)
       const planExpires = profile.plan_expires_at ? new Date(profile.plan_expires_at) : null;
-      const isBaseActive = profile.plan_type === 'base' && planExpires && planExpires > now;
+      const planActive = (profile.plan_type === 'base' || profile.plan_type === 'auto_apply') && planExpires && planExpires > now;
       
-      if (!isBaseActive) {
-        return res.status(400).json({ error: 'Top-ups are only allowed within an active Base Plan subscription month.' });
+      if (!planActive) {
+        return res.status(400).json({ error: 'Top-ups require an active Base Plan or Auto-Apply Plan.' });
       }
       
       updates.credits = (profile.credits || 0) + 1;
       description = 'Credit Top-up (+1 credit)';
     } else if (planId === 'monthly_unlimited' || amountINR === 3999) {
       updates.plan_type = 'monthly_unlimited';
+      updates.credits = (profile.credits || 0) + 2000;
       updates.plan_started_at = now.toISOString();
       const expires = new Date();
       expires.setMonth(expires.getMonth() + 1);
       updates.plan_expires_at = expires.toISOString();
-      description = 'Monthly Unlimited Plan';
+      description = 'Monthly Unlimited Plan (2000 credits + unlimited)';
     } else if (planId === 'quarterly_unlimited' || amountINR === 9999) {
       updates.plan_type = 'quarterly_unlimited';
+      updates.credits = (profile.credits || 0) + 2000;
       updates.plan_started_at = now.toISOString();
       const expires = new Date();
       expires.setMonth(expires.getMonth() + 3);
       updates.plan_expires_at = expires.toISOString();
-      description = 'Quarterly Unlimited Plan';
+      description = 'Quarterly Unlimited Plan (2000 credits + unlimited)';
     } else {
       const genericCredits = Math.floor(amountINR / 200);
       updates.credits = (profile.credits || 0) + genericCredits;
@@ -1193,7 +1201,7 @@ app.post('/api/payments/verify', requireAuth, async (req, res) => {
     // Log transaction
     await supabase.from('credit_transactions').insert({
       user_id: userId,
-      amount: planId === 'topup' ? 1 : (planId === 'base' ? 5 : 0),
+      amount: planId === 'auto_apply' ? 2000 : (planId === 'topup' ? 1 : 2000),
       reason: 'purchase',
       metadata: { 
         payment_id: razorpay_payment_id, 

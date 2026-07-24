@@ -107,10 +107,11 @@ export function openRazorpayCheckout({ orderId, amountINR, userId, userName, use
 }
 
 const PRICING_PACKAGES = [
-  { id: 'base', label: 'Base Plan', amountINR: 999, credits: 5, description: '5 session credits per month. (Max 40 mins/session)', type: 'subscription' },
-  { id: 'topup', label: 'Credit Top-up', amountINR: 249, credits: 1, description: '1 extra session credit. (Requires active base plan)', type: 'topup' },
-  { id: 'monthly_unlimited', label: 'Monthly Unlimited', amountINR: 3999, credits: 999999, description: 'Unlimited interview sessions for 1 month.', type: 'subscription' },
-  { id: 'quarterly_unlimited', label: 'Quarterly Unlimited', amountINR: 9999, credits: 999999, description: 'Unlimited sessions for 3 months (Best Value).', type: 'subscription' },
+  { id: 'auto_apply', label: 'Auto-Apply Plan', amountINR: 499, credits: 2000, description: '2,000 application credits. Auto-apply to jobs on LinkedIn.', type: 'one-time' },
+  { id: 'base', label: 'Base Plan', amountINR: 999, credits: 2000, description: '2,000 credits across Auto-Apply + Voice Mocks. Best for focused search.', type: 'subscription' },
+  { id: 'topup', label: 'Credit Top-up', amountINR: 249, credits: 1, description: '1 extra credit. (Requires active base plan)', type: 'topup' },
+  { id: 'monthly_unlimited', label: 'Monthly Unlimited', amountINR: 3999, credits: 2000, description: '2,000 credits + unlimited voice mocks for 1 month.', type: 'subscription' },
+  { id: 'quarterly_unlimited', label: 'Quarterly Unlimited', amountINR: 9999, credits: 2000, description: '2,000 credits + unlimited sessions for 3 months. (Best Value)', type: 'subscription' },
 ];
 
 export { PRICING_PACKAGES };
