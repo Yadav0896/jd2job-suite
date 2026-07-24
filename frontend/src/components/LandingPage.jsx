@@ -443,9 +443,9 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
               <p className="lead">Jd2Job applies to LinkedIn jobs for you — with a résumé rewritten by AI for every single job description — then gets you ready with voice mock interviews that reply like a human, in about a second.</p>
               <div className="hero-cta">
                 <a className="btn btn-primary" href="#" data-magnetic data-cursor="Start" onClick={handleStart}>Start free <svg className="icon arrow"><use href="#i-arrow" /></svg></a>
-                <a className="btn btn-ghost" href="#how" data-cursor="How it works"><svg className="icon"><use href="#i-cube" /></svg> See how it works</a>
+                <a className="btn btn-ghost" href="#" data-cursor="Download" onClick={(e) => { e.preventDefault(); window.open('https://api.jd2job.com/api/download', '_blank'); }}><svg className="icon"><use href="#i-cube" /></svg> Download Desktop App</a>
               </div>
-              <p className="reassure">No card needed · 2-minute setup · cancel anytime</p>
+              <p className="reassure">No card needed · 2-minute setup · cancel anytime · works on Mac & Windows</p>
               <div className="hero-proof">
                 <div className="avatars" aria-hidden="true"><span>SC</span><span>AR</span><span>ER</span><span>+9</span></div>
                 <div className="meta"><span className="stars" aria-hidden="true">★★★★★</span> <b>4.9 / 5</b> from 2,400+ job seekers</div>
@@ -634,7 +634,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
 
         {/* CTA */}
         <section className="cta">
-          <div className="wrap"><div className="cta-card reveal"><div className="orb"></div><span className="kicker on-dark" style={{ justifyContent: 'center' }}>Your edge starts now</span><h2 className="split" style={{ marginTop: '22px' }}>Your next offer<span className="serif"> is already in the pile.</span></h2><p>Set up in two minutes. Your first tailored applications go out today.</p><div className="cta-actions"><a className="btn btn-light" href="#" data-magnetic data-cursor="Start" onClick={handleStart}>Start free <svg className="icon arrow"><use href="#i-arrow" /></svg></a><a className="btn btn-glass" href="#auto-apply">See Auto Apply</a></div><span className="micro"><svg className="icon"><use href="#i-shield" /></svg> No card · in-memory privacy · cancel anytime</span></div></div>
+          <div className="wrap"><div className="cta-card reveal"><div className="orb"></div><span className="kicker on-dark" style={{ justifyContent: 'center' }}>Your edge starts now</span><h2 className="split" style={{ marginTop: '22px' }}>Your next offer<span className="serif"> is already in the pile.</span></h2><p>Set up in two minutes. Your first tailored applications go out today.</p><div className="cta-actions"><a className="btn btn-light" href="#" data-magnetic data-cursor="Start" onClick={handleStart}>Start free <svg className="icon arrow"><use href="#i-arrow" /></svg></a><a className="btn btn-glass" href="#" data-cursor="Download" onClick={(e) => { e.preventDefault(); window.open('https://api.jd2job.com/api/download', '_blank'); }}><svg className="icon"><use href="#i-cube" /></svg> Get Desktop App</a></div><span className="micro"><svg className="icon"><use href="#i-shield" /></svg> No card · in-memory privacy · cancel anytime</span></div></div>
         </section>
       </main>
 
@@ -642,7 +642,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
         <div className="wrap">
           <div className="foot-top">
             <div className="foot-brand"><a className="brand" href="#top"><span className="mark"><Jd2JobLogo width={24} height={24} /></span> Jd2Job</a><p>The job-search copilot — Auto Apply, AI résumés and voice mock interviews.</p></div>
-            <div className="foot-col"><h4>Product</h4><a href="#auto-apply">Auto Apply</a><a href="#mock">Mock Interview</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></div>
+            <div className="foot-col"><h4>Product</h4><a href="#auto-apply">Auto Apply</a><a href="#mock">Mock Interview</a><a href="#pricing">Pricing</a><a href="#" onClick={(e) => { e.preventDefault(); window.open('https://api.jd2job.com/api/download', '_blank'); }}>Desktop App</a><a href="#faq">FAQ</a></div>
             <div className="foot-col"><h4>Company</h4><a href="#about" onClick={(e) => { e.preventDefault(); setLegalPage('about'); }}>About</a><a href="#privacy" onClick={(e) => { e.preventDefault(); setLegalPage('privacy'); }}>Privacy</a><a href="#terms" onClick={(e) => { e.preventDefault(); setLegalPage('terms'); }}>Terms</a><a href="mailto:hello@jd2job.com">Contact</a></div>
             <div className="news"><h4>The short list</h4><p>Job-search notes and product changes. A few times a year, never more.</p><form onSubmit={(e) => { e.preventDefault(); window.open('mailto:hello@jd2job.com?subject=Newsletter%20Signup', '_blank'); }}><label htmlFor="lp-email">Email address</label><input id="lp-email" type="email" placeholder="you@email.com" autoComplete="email" required /><button className="btn btn-primary" type="submit" aria-label="Subscribe" style={{ padding: '12px 14px' }}><svg className="icon"><use href="#i-arrow" /></svg></button></form></div>
           </div>
