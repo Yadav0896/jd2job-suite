@@ -244,11 +244,11 @@ ${targetJob.tailored_resume}`;
             ← Exit to Hub
           </button>
           <button 
-            onClick={() => window.open(`${API_BASE}/api/download`, '_blank')}
+            onClick={() => window.open('https://chromewebstore.google.com/detail/ijeadagkdnlaidobdoojmcfpojepocpk', '_blank')}
             className="header-btn" 
-            title="Download Jd2Job desktop app for Windows/macOS"
+            title="Get the Jd2Job Chrome Extension for LinkedIn Auto Apply"
             style={{ 
-              background: 'linear-gradient(135deg, #b03a6b, #912f56)', 
+              background: 'linear-gradient(135deg, #10b981, #059669)', 
               border: 'none',
               padding: '8px 18px',
               borderRadius: '8px',
@@ -261,7 +261,7 @@ ${targetJob.tailored_resume}`;
               gap: '6px'
             }}
           >
-            💻 Download Desktop App
+            🧩 Install Chrome Extension
           </button>
           <div>
             <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 700, color: '#10b981' }}>Jd2Job</h1>
