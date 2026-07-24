@@ -4,8 +4,29 @@
 
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
 
-// ── Direct DeepSeek (fallback path when the user brings their own key) ──────
+// ── Backend-first AI call (uses Jd2Job credits, no personal key needed) ─────
 async function callDeepSeek(messages, options = {}) {
+  // Try backend first (tracks credits, uses shared API keys)
+  try {
+    const data = await jd2jobFetch('/deepseek/chat', {
+      method: 'POST',
+      body: {
+        model: options.model || 'deepseek-chat',
+        messages,
+        temperature: options.temperature ?? 0.7,
+        max_tokens: options.maxTokens || 4096,
+        stream: false,
+      }
+    });
+    if (data?.choices?.[0]?.message?.content) {
+      return data.choices[0].message.content;
+    }
+    if (data?.content) return data.content;
+  } catch (backendErr) {
+    console.warn('[Jd2Job] Backend call failed, trying own key:', backendErr.message);
+  }
+
+  // Fallback: user's own DeepSeek key
   const { apiKey } = await chrome.storage.sync.get(['apiKey']);
   if (!apiKey) {
     throw new Error('Not connected: sign into jd2job.com, or add your own DeepSeek API key in Settings.');
@@ -13,23 +34,15 @@ async function callDeepSeek(messages, options = {}) {
 
   const res = await fetch(DEEPSEEK_API_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: options.model || 'deepseek-chat',
-      messages,
+      model: options.model || 'deepseek-chat', messages,
       temperature: options.temperature ?? 0.7,
       max_tokens: options.maxTokens || 4096
     })
   });
 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`DeepSeek API error (${res.status}): ${err}`);
-  }
-
+  if (!res.ok) { const err = await res.text(); throw new Error(`DeepSeek error (${res.status}): ${err}`); }
   const data = await res.json();
   return data.choices[0].message.content;
 }

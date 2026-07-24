@@ -566,18 +566,12 @@ async function parseResumeAndAutoFill(text) {
       document.getElementById('github').value = 'https://' + githubMatch[0];
     }
 
-    // 2. Second Pass: DeepSeek AI Parsing (If API key configured)
-    const apiKey = document.getElementById('apiKey').value.trim();
-    if (apiKey) {
-      showToast('Calling DeepSeek AI to parse resume...', 'info');
-      
-      const response = await fetch('https://api.deepseek.com/chat/completions', {
+    // 2. Second Pass: AI Parsing via Jd2Job Backend (no personal API key needed)
+    try {
+      showToast('AI parsing your resume...', 'info');
+      const data = await jd2jobFetch('/deepseek/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
+        body: {
           model: 'deepseek-chat',
           messages: [
             {
@@ -596,21 +590,16 @@ async function parseResumeAndAutoFill(text) {
                 "noticePeriod": "Number (estimate notice days or 0 if none/unspecified)"
               }`
             },
-            {
-              role: 'user',
-              content: text
-            }
+            { role: 'user', content: text }
           ],
           temperature: 0.1,
-          response_format: { type: 'json_object' }
-        })
+          stream: false
+        }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        const jsonText = data.choices[0].message.content;
-        const parsed = JSON.parse(jsonText);
-        
+      const content = data?.choices?.[0]?.message?.content;
+      if (content) {
+        const parsed = JSON.parse(content);
         if (parsed.firstName) document.getElementById('firstName').value = parsed.firstName;
         if (parsed.lastName) document.getElementById('lastName').value = parsed.lastName;
         if (parsed.email) document.getElementById('email').value = parsed.email;
@@ -621,13 +610,11 @@ async function parseResumeAndAutoFill(text) {
         if (parsed.github) document.getElementById('github').value = parsed.github;
         if (parsed.portfolio) document.getElementById('portfolio').value = parsed.portfolio;
         if (parsed.noticePeriod) document.getElementById('noticePeriod').value = parsed.noticePeriod;
-        
         showToast('AI successfully parsed resume!', 'success');
-      } else {
-        showToast('AI Parsing failed, using basic local extraction.', 'warning');
       }
-    } else {
-      showToast('Form filled using basic extraction. Add API Key for full AI auto-fill!', 'info');
+    } catch (aiErr) {
+      console.warn('AI parsing via backend failed, using basic extraction:', aiErr.message);
+      showToast('Form filled using basic extraction. Sign in to jd2job.com for AI auto-fill!', 'info');
     }
 
     // Save automatically after filling
