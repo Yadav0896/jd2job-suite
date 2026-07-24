@@ -110,7 +110,7 @@ function SpeakerBubble({ item }) {
   );
 }
 
-function EmptyState({ isRecording, resumeData, platformMode }) {
+function EmptyState({ isRecording, resumeData, platformMode, jobDescription, assignmentDocs }) {
   if (platformMode === 'sales') {
     return (
       <div className="empty-state">
@@ -170,9 +170,9 @@ function EmptyState({ isRecording, resumeData, platformMode }) {
   return (
     <div className="empty-state">
       <div className="empty-icon">🎯</div>
-      <div className="empty-title">No interview conversation yet</div>
+      <div className="empty-title">Ready to start your interview</div>
       <div className="empty-desc">
-        Start a session and speak — everything said will appear here automatically.
+        Follow these steps and the AI will give you real-time answers tailored to your resume and the job.
       </div>
       <div className="step-guide">
         <div className="step-item">
@@ -180,18 +180,37 @@ function EmptyState({ isRecording, resumeData, platformMode }) {
             {resumeData ? '✓' : '1'}
           </div>
           <div className="step-text">
-            <strong>Add your resume</strong> so AI gives personalised answers
+            <strong>Upload your resume</strong> — click 📄 Resume above
+          </div>
+        </div>
+        <div className="step-item">
+          <div className={`step-num ${jobDescription ? 'done' : ''}`}>
+            {jobDescription ? '✓' : '2'}
+          </div>
+          <div className="step-text">
+            <strong>Paste the job description</strong> — click 📋 JD above
+          </div>
+        </div>
+        <div className="step-item">
+          <div className={`step-num ${(assignmentDocs || []).length > 0 ? 'done' : ''}`}>
+            {(assignmentDocs || []).length > 0 ? '✓' : '3'}
+          </div>
+          <div className="step-text">
+            <strong>Upload assignments (optional)</strong> — click 📝 Assignments above
           </div>
         </div>
         <div className="step-item">
           <div className={`step-num ${isRecording ? 'done' : ''}`}>
-            {isRecording ? '✓' : '2'}
+            {isRecording ? '✓' : '4'}
           </div>
           <div className="step-text">
-            <strong>Click the start button</strong> below to begin recording
+            <strong>Click the red record button</strong> below to start. AI listens and suggests answers instantly.
           </div>
         </div>
       </div>
+      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 16 }}>
+        💡 Pro tip: The AI uses your resume + JD + assignments together. The more context, the better the answers.
+      </p>
     </div>
   );
 }
@@ -253,6 +272,8 @@ export default function TranscriptPanel() {
             isRecording={isRecording}
             resumeData={resumeData}
             platformMode={platformMode}
+            jobDescription={state.jobDescription}
+            assignmentDocs={state.assignmentDocs}
           />
         ) : (
           <>

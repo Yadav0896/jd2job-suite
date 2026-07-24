@@ -35,7 +35,7 @@ const initialState = {
 
   // ── Platform ──
   platformMode: 'interview', // 'interview' | 'sales' | 'meeting'
-  sidebarCollapsed: false,
+  sidebarCollapsed: true, // Collapsed by default for cleaner workspace
   credits: 10,
 
   transcripts: [],
