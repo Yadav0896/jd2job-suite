@@ -24,6 +24,7 @@ import ThemeToggle from './components/ThemeToggle';
 import ConfirmDialog from './components/ConfirmDialog';
 import { ToastProvider } from './components/Toast';
 import SupportWidget from './components/SupportWidget';
+import Blog from './components/Blog';
 import AdminDashboard from './components/AdminDashboard';
 import { signOut } from './services/supabaseClient';
 import PricingPage from './components/PricingPage';
@@ -113,6 +114,7 @@ function AppContent() {
   const [showPricing, setShowPricing]         = useState(false);
   const [showSessionArchive, setShowSessionArchive] = useState(false);
   const [showAdmin, setShowAdmin]             = useState(false);
+  const [showBlog, setShowBlog]               = useState(false);
   const [showOnboarding, setShowOnboarding]       = useState(() => {
     return localStorage.getItem('jd2job_onboarding_done') !== 'true';
   });
@@ -449,7 +451,12 @@ function AppContent() {
     );
   }
 
-  // 3. Admin dashboard
+  // 3. Blog
+  if (showBlog) {
+    return <Blog onBack={() => setShowBlog(false)} />;
+  }
+
+  // 4. Admin dashboard
   if (showAdmin) {
     return <AdminDashboard onBack={() => setShowAdmin(false)} />;
   }
