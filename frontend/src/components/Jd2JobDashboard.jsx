@@ -1,977 +1,288 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { getSession } from '../services/supabaseClient';
-import ReactMarkdown from 'react-markdown';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+function StatCard({ icon, label, value, color = 'var(--accent, #e08aae)' }) {
+  return (
+    <div style={{
+      background: 'var(--bg-card)', border: '1px solid var(--border)',
+      borderRadius: 14, padding: '18px 22px', flex: 1, minWidth: 150,
+      display: 'flex', alignItems: 'center', gap: 14,
+    }}>
+      <div style={{
+        width: 42, height: 42, borderRadius: 10,
+        background: `${color}14`, border: `1px solid ${color}28`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '1.2rem', flexShrink: 0,
+      }}>{icon}</div>
+      <div>
+        <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{value}</div>
+        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: 2 }}>{label}</div>
+      </div>
+    </div>
+  );
+}
 
 export default function Jd2JobDashboard({ onBack }) {
   const { state } = useApp();
-  const { user } = state;
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedResume, setSelectedResume] = useState(null);
-  const [sortBy, setSortBy] = useState('applied_at'); // 'applied_at' | 'company' | 'title'
-  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' | 'desc'
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
-
-  // Recruiter cold outreach generation state
-  const [activeModalTab, setActiveModalTab] = useState('resume'); // 'resume' | 'outreach'
-  const [outreachPitch, setOutreachPitch] = useState('');
-  const [isGeneratingPitch, setIsGeneratingPitch] = useState(false);
-
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [sortBy, setSortBy] = useState('applied_at');
+  const [sortOrder, setSortOrder] = useState('desc');
 
   const fetchJobs = async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
       const session = await getSession();
       const headers = { 'Content-Type': 'application/json' };
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
-
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
       const res = await fetch(`${API_BASE}/api/jd2job/jobs`, { headers });
-      if (!res.ok) {
-        throw new Error(`Server returned ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
       const data = await res.json();
-      if (data.success) {
-        setJobs(data.jobs || []);
-      } else {
-        throw new Error(data.error || 'Failed to load jobs');
-      }
+      setJobs(data.success ? (data.jobs || []) : []);
     } catch (err) {
-      console.error('[Jd2JobDashboard] Fetch error:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const generateOutreachPitch = async (jobRecord) => {
-    const targetJob = jobRecord || selectedResume;
-    if (!targetJob) return;
-    setIsGeneratingPitch(true);
-    setOutreachPitch('');
+  const handleDelete = async (jobId) => {
+    if (!window.confirm('Delete this job record?')) return;
     try {
       const session = await getSession();
       const headers = { 'Content-Type': 'application/json' };
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
-
-      const prompt = `You are a professional copywriter. Write two high-converting outreach message templates written strictly in the FIRST-PERSON ("I", "my") from the perspective of the candidate themselves applying for the position of "${targetJob.title}" at "${targetJob.company}". Do NOT write in the third-person or as an external recruiter.
-
-Write these two templates:
-1. **LinkedIn Connection Pitch** (Under 300 characters, short & crisp, with placeholders like [Name]):
-2. **Hiring Manager Cold Email** (Under 150 words, clean subject line, direct value pitch, clear call to action, signed off by the candidate):
-
-Format both with clear Markdown headers. Here is the tailored resume details:
-${targetJob.tailored_resume}`;
-
-      const res = await fetch(`${API_BASE}/api/deepseek/chat`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          messages: [{ role: 'user', content: prompt }]
-        })
-      });
-
-      if (!res.ok) throw new Error('Failed to generate outreach pitch');
-      const data = await res.json();
-      
-      if (data.choices?.[0]?.message?.content) {
-        setOutreachPitch(data.choices[0].message.content);
-      } else if (data.content) {
-        setOutreachPitch(data.content);
-      } else {
-        throw new Error('Invalid response structure');
-      }
-    } catch (err) {
-      console.error(err);
-      setOutreachPitch('⚠️ Error generating outreach templates: ' + err.message);
-    } finally {
-      setIsGeneratingPitch(false);
-    }
-  };
-
-  const handleDeleteJob = async (jobId) => {
-    if (!window.confirm('Are you sure you want to delete this job application record?')) return;
-    try {
-      const session = await getSession();
-      const headers = { 'Content-Type': 'application/json' };
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
-      const res = await fetch(`${API_BASE}/api/jd2job/jobs/${jobId}`, {
-        method: 'DELETE',
-        headers
-      });
-      if (!res.ok) throw new Error('Failed to delete job');
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      await fetch(`${API_BASE}/api/jd2job/jobs/${jobId}`, { method: 'DELETE', headers });
       setJobs(jobs.filter(j => j.id !== jobId));
-      if (selectedResume?.id === jobId) {
-        setSelectedResume(null);
-      }
-    } catch (err) {
-      alert(`Error deleting job: ${err.message}`);
-    }
+      if (selectedJob?.id === jobId) setSelectedJob(null);
+    } catch (err) { alert('Failed to delete: ' + err.message); }
   };
 
   const handleSort = (field) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('asc');
-    }
-    setCurrentPage(1);
+    if (sortBy === field) setSortOrder(s => s === 'asc' ? 'desc' : 'asc');
+    else { setSortBy(field); setSortOrder('desc'); }
   };
 
-  useEffect(() => {
-    fetchJobs();
-  }, []);
+  useEffect(() => { fetchJobs(); }, []);
 
-  // Filter and sort jobs
-  const processedJobs = jobs
-    .filter(job => 
-      job.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      job.company?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+  const filteredJobs = jobs
+    .filter(j => (j.title || '').toLowerCase().includes(searchTerm.toLowerCase()) || (j.company || '').toLowerCase().includes(searchTerm.toLowerCase()))
     .sort((a, b) => {
-      let valA = a[sortBy] || '';
-      let valB = b[sortBy] || '';
-      
-      if (sortBy === 'applied_at') {
-        valA = new Date(valA).getTime();
-        valB = new Date(valB).getTime();
-      } else {
-        valA = String(valA).toLowerCase();
-        valB = String(valB).toLowerCase();
-      }
-
-      if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
-      if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
+      let va = a[sortBy] || '', vb = b[sortBy] || '';
+      if (sortBy === 'applied_at') { va = new Date(va).getTime() || 0; vb = new Date(vb).getTime() || 0; }
+      else { va = String(va).toLowerCase(); vb = String(vb).toLowerCase(); }
+      return sortOrder === 'asc' ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
     });
 
-  // Paginated jobs
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentJobs = processedJobs.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(processedJobs.length / itemsPerPage);
-
-  // Calculate statistics
   const totalApplied = jobs.length;
-  const appliedToday = jobs.filter(job => {
-    const today = new Date().toISOString().split('T')[0];
-    if (!job.applied_at) return false;
-    const d = new Date(job.applied_at);
-    if (isNaN(d.getTime())) return false;
-    const appDate = d.toISOString().split('T')[0];
-    return today === appDate;
-  }).length;
+  const today = new Date().toISOString().split('T')[0];
+  const appliedToday = jobs.filter(j => { if (!j.applied_at) return false; const d = new Date(j.applied_at); return !isNaN(d.getTime()) && d.toISOString().split('T')[0] === today; }).length;
+  const uniqueCompanies = [...new Set(jobs.map(j => j.company).filter(Boolean))].length;
 
-  // Calculate weekly breakdown (last 7 days)
-  const getWeeklyBreakdown = () => {
-    const counts = {};
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const key = d.toISOString().split('T')[0];
-      counts[key] = {
-        label: d.toLocaleDateString('en-US', { weekday: 'short' }),
-        count: 0
-      };
-    }
-
-    jobs.forEach(job => {
-      if (!job.applied_at) return;
-      const d = new Date(job.applied_at);
-      if (isNaN(d.getTime())) return;
-      const appDate = d.toISOString().split('T')[0];
-      if (counts[appDate]) {
-        counts[appDate].count++;
-      }
-    });
-
-    return Object.values(counts);
-  };
-
-  const weeklyData = getWeeklyBreakdown();
-  const maxWeeklyCount = Math.max(...weeklyData.map(d => d.count), 1);
+  const SortIcon = ({ field }) => (
+    <span style={{ marginLeft: 4, opacity: sortBy === field ? 1 : 0.3, fontSize: '0.65rem' }}>
+      {sortBy === field ? (sortOrder === 'asc' ? '▲' : '▼') : '▼'}
+    </span>
+  );
 
   return (
-    <div className="jd2job-dashboard" style={{
-      padding: '24px',
-      color: 'var(--text-primary)',
-      background: 'var(--bg-main, #0a0a0f)',
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '24px',
-      fontFamily: "'Outfit', sans-serif"
-    }}>
-      {/* ── Header ─────────────────────────────────────────── */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <header style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 32px', height: 68, flexShrink: 0,
+        background: 'var(--glass-bg)', backdropFilter: 'blur(24px)',
         borderBottom: '1px solid var(--border)',
-        paddingBottom: '16px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button 
-            onClick={onBack}
-            className="header-btn" 
-            style={{ 
-              background: 'var(--bg-card)', 
-              border: '1px solid var(--border)',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              color: 'var(--text-primary)',
-              cursor: 'pointer',
-              fontWeight: 500,
-              fontSize: '0.9rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            ← Exit to Hub
-          </button>
-          <button 
-            onClick={() => window.open('https://chromewebstore.google.com/detail/ijeadagkdnlaidobdoojmcfpojepocpk', '_blank')}
-            className="header-btn" 
-            title="Get the Jd2Job Chrome Extension for LinkedIn Auto Apply"
-            style={{ 
-              background: 'linear-gradient(135deg, #10b981, #059669)', 
-              border: 'none',
-              padding: '8px 18px',
-              borderRadius: '8px',
-              color: '#fff',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '0.85rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            🧩 Install Chrome Extension
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <button onClick={onBack} className="header-btn" style={{ padding: '7px 14px', fontSize: '0.82rem' }}>← Exit</button>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 700, color: '#10b981' }}>Jd2Job</h1>
-            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>LinkedIn Auto-Apply Analytics & Tracker</p>
+            <h1 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Auto-Apply Analytics</h1>
           </div>
         </div>
-        
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          background: 'rgba(16, 185, 129, 0.1)',
-          border: '1px solid rgba(16, 185, 129, 0.2)',
-          padding: '6px 12px',
-          borderRadius: '20px',
-          fontSize: '0.8rem',
-          color: '#10b981',
-          fontWeight: 600
-        }}>
-          <span className="live-dot pulse" style={{ background: '#10b981' }} />
-          Extension Synced (Localhost)
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={() => window.open('https://chromewebstore.google.com/detail/ijeadagkdnlaidobdoojmcfpojepocpk', '_blank')}
+            style={{
+              background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', border: 'none',
+              borderRadius: 8, padding: '7px 16px', cursor: 'pointer', fontWeight: 600,
+              fontSize: '0.8rem', fontFamily: 'inherit',
+            }}>🧩 Get Extension</button>
+          <button onClick={fetchJobs} className="header-btn" style={{ padding: '7px 14px', fontSize: '0.82rem' }}>↻ Refresh</button>
         </div>
-      </div>
+      </header>
 
-      {/* ── Stats grid ────────────────────────────────────── */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-        gap: '20px'
-      }}>
-        <div className="stat-card" style={{
-          background: 'var(--bg-card, rgba(20, 20, 30, 0.6))',
-          border: '1px solid var(--border)',
-          borderRadius: '12px',
-          padding: '20px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px'
-        }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Total Applications</span>
-          <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#10b981' }}>{totalApplied}</span>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Synced from Chrome Extension</span>
-        </div>
-
-        <div className="stat-card" style={{
-          background: 'var(--bg-card, rgba(20, 20, 30, 0.6))',
-          border: '1px solid var(--border)',
-          borderRadius: '12px',
-          padding: '20px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px'
-        }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Applied Today</span>
-          <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#38bdf8' }}>{appliedToday}</span>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Completed in last 24 hours</span>
-        </div>
-
-
-
-        {/* Weekly Chart Card */}
-        <div className="stat-card" style={{
-          background: 'var(--bg-card, rgba(20, 20, 30, 0.6))',
-          border: '1px solid var(--border)',
-          borderRadius: '12px',
-          padding: '16px 20px',
-          gridColumn: 'span 2',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between'
-        }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>Activity (Last 7 Days)</span>
-          <div style={{
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            height: '80px',
-            gap: '8px'
-          }}>
-            {weeklyData.map((d, i) => {
-              const heightPct = (d.count / maxWeeklyCount) * 100;
-              return (
-                <div key={i} style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  flex: 1,
-                  gap: '6px'
-                }}>
-                  <div style={{
-                    width: '100%',
-                    height: '60px',
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    borderRadius: '4px'
-                  }}>
-                    <div style={{
-                      width: '100%',
-                      height: `${heightPct}%`,
-                      background: 'linear-gradient(180deg, #10b981 0%, #059669 100%)',
-                      borderRadius: '4px',
-                      transition: 'height 0.3s ease',
-                      position: 'relative'
-                    }} title={`${d.count} jobs`}>
-                      {d.count > 0 && (
-                        <span style={{
-                          position: 'absolute',
-                          top: '-18px',
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          fontSize: '0.7rem',
-                          fontWeight: 'bold',
-                          color: '#10b981'
-                        }}>{d.count}</span>
-                      )}
-                    </div>
-                  </div>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{d.label}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Table & Search Section ───────────────────────── */}
-      <div style={{
-        background: 'var(--bg-card, rgba(20, 20, 30, 0.6))',
-        border: '1px solid var(--border)',
-        borderRadius: '12px',
-        padding: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-        flex: 1
-      }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '12px'
-        }}>
-          <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 600 }}>Application Log</h2>
-          <div style={{ display: 'flex', gap: '8px', width: '320px' }}>
-            <input 
-              type="text" 
-              placeholder="Search by company or role..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                width: '100%',
-                background: 'rgba(10, 10, 15, 0.8)',
-                border: '1px solid var(--border)',
-                borderRadius: '8px',
-                padding: '8px 12px',
-                color: '#fff',
-                fontSize: '0.85rem'
-              }}
-            />
-          </div>
-        </div>
-
+      {/* Content */}
+      <div style={{ flex: 1, overflow: 'auto', padding: '28px 32px' }}>
         {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: '12px' }}>
-            <div className="thinking-spinner" style={{ width: 32, height: 32, borderWidth: 3 }} />
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Loading jobs...</span>
+          <div style={{ textAlign: 'center', padding: 80, color: 'var(--text-muted)' }}>
+            <div className="thinking-spinner" style={{ margin: '0 auto 16px', width: 32, height: 32 }} />
+            Loading your applications...
           </div>
-        ) : processedJobs.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
-            <span style={{ fontSize: '2rem' }}>📂</span>
-            <p style={{ margin: '8px 0 0', fontSize: '0.9rem' }}>No job applications found matching your criteria.</p>
-            <p style={{ margin: 0, fontSize: '0.75rem' }}>Run the Jd2Job extension in Chrome to populate this dashboard.</p>
+        ) : error ? (
+          <div style={{ textAlign: 'center', padding: 60 }}>
+            <div style={{ fontSize: '3rem', marginBottom: 12 }}>🔌</div>
+            <h3 style={{ color: 'var(--text-primary)', marginBottom: 8 }}>Couldn't load data</h3>
+            <p style={{ color: 'var(--text-muted)', marginBottom: 16, fontSize: '0.88rem' }}>{error}</p>
+            <button onClick={fetchJobs} className="btn btn-primary" style={{ padding: '10px 24px' }}>Try Again</button>
+          </div>
+        ) : jobs.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+            <div style={{ fontSize: '4rem', marginBottom: 16 }}>📭</div>
+            <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>No applications yet</h2>
+            <p style={{ color: 'var(--text-muted)', maxWidth: 460, margin: '0 auto 24px', lineHeight: 1.7, fontSize: '0.9rem' }}>
+              Install the Jd2Job Chrome Extension and start auto-applying on LinkedIn. Your applications will appear here automatically.
+            </p>
+            <button onClick={() => window.open('https://chromewebstore.google.com/detail/ijeadagkdnlaidobdoojmcfpojepocpk', '_blank')}
+              style={{
+                background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', border: 'none',
+                borderRadius: 10, padding: '12px 28px', cursor: 'pointer', fontWeight: 700,
+                fontSize: '0.9rem', fontFamily: 'inherit',
+              }}>🧩 Install Chrome Extension</button>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
-            <div style={{ overflowX: 'auto', flex: 1 }}>
-              <table style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                textAlign: 'left',
-                fontSize: '0.85rem'
-              }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                    <th 
-                      onClick={() => handleSort('company')}
-                      style={{ padding: '12px 8px', cursor: 'pointer', userSelect: 'none' }}
-                    >
-                      Company {sortBy === 'company' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
-                    </th>
-                    <th 
-                      onClick={() => handleSort('title')}
-                      style={{ padding: '12px 8px', cursor: 'pointer', userSelect: 'none' }}
-                    >
-                      Job Title {sortBy === 'title' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
-                    </th>
-                    <th 
-                      onClick={() => handleSort('applied_at')}
-                      style={{ padding: '12px 8px', cursor: 'pointer', userSelect: 'none' }}
-                    >
-                      Date Applied {sortBy === 'applied_at' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
-                    </th>
-                    <th style={{ padding: '12px 8px' }}>Hiring Manager</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'center' }}>Job Link</th>
-                    <th style={{ padding: '12px 8px', textAlign: 'right' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentJobs.map((job) => (
-                    <tr key={job.id} style={{ 
-                      borderBottom: '1px solid rgba(255,255,255,0.03)',
-                      transition: 'background 0.2s',
-                      cursor: 'default'
-                    }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.01)'}
-                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
-                      <td style={{ padding: '14px 8px', fontWeight: 600 }}>{job.company}</td>
-                      <td style={{ padding: '14px 8px' }}>{job.title}</td>
-                      <td style={{ padding: '14px 8px', color: 'var(--text-secondary)' }}>
-                        {new Date(job.applied_at).toLocaleDateString(undefined, {
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </td>
-                      <td style={{ padding: '14px 8px' }}>
-                        {job.hiring_team ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {job.hiring_team.avatar && (
-                              <img src={job.hiring_team.avatar} alt={job.hiring_team.name} style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
-                            )}
-                            {job.hiring_team.link ? (
-                              <a 
-                                href={job.hiring_team.link} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                style={{ color: '#38bdf8', textDecoration: 'none', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}
-                                onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                                onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
-                              >
-                                {job.hiring_team.name}
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>
-                                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                                  <polyline points="15 3 21 3 21 9"></polyline>
-                                  <line x1="10" y1="14" x2="21" y2="3"></line>
-                                </svg>
-                              </a>
-                            ) : (
-                              <span style={{ fontWeight: 500 }}>{job.hiring_team.name}</span>
-                            )}
-                          </div>
-                        ) : (
-                          <span style={{ color: 'var(--text-muted)' }}>—</span>
-                        )}
-                      </td>
-                      <td style={{ padding: '14px 8px', textAlign: 'center' }}>
-                        {job.link ? (
-                          <a 
-                            href={job.link} 
-                            target="_blank" 
-                            rel="noreferrer" 
-                            style={{ color: '#10b981', textDecoration: 'none', fontWeight: 500 }}
-                          >
-                            View Link ↗
-                          </a>
-                        ) : (
-                          <span style={{ color: 'var(--text-muted)' }}>—</span>
-                        )}
-                      </td>
-                      <td style={{ padding: '14px 8px', textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                        {job.tailored_resume ? (
-                          <>
-                            <button 
-                              onClick={() => {
-                                setSelectedResume(job);
-                                setActiveModalTab('resume');
-                                setOutreachPitch('');
-                              }}
-                              className="copy-btn"
-                              style={{ 
-                                fontSize: '0.75rem', 
-                                padding: '6px 12px', 
-                                background: 'rgba(145, 47, 86, 0.1)', 
-                                color: '#e08aae',
-                                border: '1px solid rgba(145, 47, 86, 0.25)',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                fontWeight: '600',
-                                transition: 'all 0.2s'
-                              }}
-                            >
-                              📄 Resume
-                            </button>
-                            <button 
-                              onClick={() => {
-                                setSelectedResume(job);
-                                setActiveModalTab('outreach');
-                                setOutreachPitch('');
-                                generateOutreachPitch(job);
-                              }}
-                              className="copy-btn"
-                              style={{ 
-                                fontSize: '0.75rem', 
-                                padding: '6px 12px', 
-                                background: 'rgba(16, 185, 129, 0.1)', 
-                                color: '#10b981',
-                                border: '1px solid rgba(16, 185, 129, 0.2)',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                fontWeight: '600',
-                                transition: 'all 0.2s'
-                              }}
-                            >
-                              ✉️ Outreach
-                            </button>
-                          </>
-                        ) : (
-                          <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginRight: '4px' }}>No assets</span>
-                        )}
-                        <button
-                          onClick={() => handleDeleteJob(job.id)}
-                          style={{
-                            fontSize: '0.75rem',
-                            padding: '6px 8px',
-                            background: 'rgba(239, 68, 68, 0.1)',
-                            color: '#ef4444',
-                            border: '1px solid rgba(239, 68, 68, 0.2)',
-                            borderRadius: '6px',
-                            cursor: 'pointer'
-                          }}
-                          title="Delete application record"
-                        >
-                          🗑️
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <>
+            {/* Stats Row */}
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 24 }}>
+              <StatCard icon="📤" label="Total Applied" value={totalApplied} />
+              <StatCard icon="📅" label="Today" value={appliedToday} color="var(--success, #10b981)" />
+              <StatCard icon="🏢" label="Companies" value={uniqueCompanies} color="var(--holo-purple, #8b5cf6)" />
             </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
+            {/* Search + Table */}
+            <div style={{
+              background: 'var(--bg-card)', border: '1px solid var(--border)',
+              borderRadius: 16, overflow: 'hidden',
+            }}>
+              {/* Search bar */}
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
+                <input
+                  type="text" placeholder="🔍 Search by job title or company..."
+                  value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                  style={{
+                    width: '100%', padding: '10px 14px', borderRadius: 8,
+                    border: '1px solid var(--border-medium)', background: 'var(--bg-input)',
+                    color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none',
+                    fontFamily: 'inherit',
+                  }}
+                />
+              </div>
+
+              {/* Table */}
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)' }}>
+                      {[
+                        { key: 'title', label: 'Job Title' },
+                        { key: 'company', label: 'Company' },
+                        { key: 'applied_at', label: 'Applied' },
+                      ].map(col => (
+                        <th key={col.key} onClick={() => handleSort(col.key)}
+                          style={{
+                            padding: '12px 16px', textAlign: 'left', cursor: 'pointer',
+                            fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)',
+                            textTransform: 'uppercase', letterSpacing: '0.04em',
+                            fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap',
+                            userSelect: 'none',
+                          }}>
+                          {col.label}<SortIcon field={col.key} />
+                        </th>
+                      ))}
+                      <th style={{ padding: '12px 16px', textAlign: 'right', width: 60 }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredJobs.map(job => (
+                      <tr key={job.id}
+                        onClick={() => setSelectedJob(selectedJob?.id === job.id ? null : job)}
+                        style={{
+                          borderBottom: '1px solid var(--border-light)',
+                          background: selectedJob?.id === job.id ? 'var(--accent-light, rgba(224,138,174,.08))' : 'transparent',
+                          cursor: 'pointer', transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={e => { if (selectedJob?.id !== job.id) e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                        onMouseLeave={e => { if (selectedJob?.id !== job.id) e.currentTarget.style.background = 'transparent'; }}
+                      >
+                        <td style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.85rem' }}>
+                          {job.title || '—'}
+                        </td>
+                        <td style={{ padding: '14px 16px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                          {job.company || '—'}
+                        </td>
+                        <td style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                          {job.applied_at ? new Date(job.applied_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                        </td>
+                        <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                          <button onClick={e => { e.stopPropagation(); handleDelete(job.id); }}
+                            style={{
+                              background: 'none', border: '1px solid transparent', borderRadius: 6,
+                              padding: '4px 8px', cursor: 'pointer', color: 'var(--text-muted)',
+                              fontSize: '0.78rem', transition: 'all 0.15s',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--error)'; e.currentTarget.style.color = 'var(--error)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+                          >🗑</button>
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredJobs.length === 0 && (
+                      <tr><td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>No matches</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Selected job detail */}
+            {selectedJob && (
               <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: '12px',
-                paddingTop: '12px',
-                borderTop: '1px solid var(--border)'
+                marginTop: 20, padding: 24,
+                background: 'var(--bg-card)', border: '1px solid var(--border)',
+                borderRadius: 16,
               }}>
-                <button
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  style={{
-                    background: currentPage === 1 ? 'transparent' : 'var(--bg-card)',
-                    border: '1px solid var(--border)',
-                    color: currentPage === 1 ? 'var(--text-muted)' : 'var(--text-primary)',
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                    fontSize: '0.8rem'
-                  }}
-                >
-                  Previous
-                </button>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  style={{
-                    background: currentPage === totalPages ? 'transparent' : 'var(--bg-card)',
-                    border: '1px solid var(--border)',
-                    color: currentPage === totalPages ? 'var(--text-muted)' : 'var(--text-primary)',
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-                    fontSize: '0.8rem'
-                  }}
-                >
-                  Next
-                </button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                  <div>
+                    <h3 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>{selectedJob.title}</h3>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '4px 0 0' }}>{selectedJob.company} · Applied {selectedJob.applied_at ? new Date(selectedJob.applied_at).toLocaleDateString() : '—'}</p>
+                  </div>
+                  <button onClick={() => setSelectedJob(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.2rem' }}>×</button>
+                </div>
+                {selectedJob.tailored_resume && (
+                  <div>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, fontFamily: "'JetBrains Mono', monospace" }}>Tailored Resume</div>
+                    <div style={{
+                      background: 'var(--bg-input)', border: '1px solid var(--border-light)',
+                      borderRadius: 10, padding: '16px 20px',
+                      fontSize: '0.85rem', lineHeight: 1.7, color: 'var(--text-secondary)',
+                      whiteSpace: 'pre-wrap', maxHeight: 300, overflowY: 'auto',
+                      fontFamily: 'inherit',
+                    }}>
+                      {selectedJob.tailored_resume}
+                    </div>
+                  </div>
+                )}
+                {selectedJob.hiring_team && (
+                  <div style={{ marginTop: 16 }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, fontFamily: "'JetBrains Mono', monospace" }}>Hiring Team</div>
+                    <pre style={{
+                      background: 'var(--bg-input)', border: '1px solid var(--border-light)',
+                      borderRadius: 10, padding: '12px 16px',
+                      fontSize: '0.8rem', color: 'var(--text-muted)', overflowX: 'auto',
+                      fontFamily: "'JetBrains Mono', monospace",
+                    }}>{JSON.stringify(selectedJob.hiring_team, null, 2)}</pre>
+                  </div>
+                )}
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
-
-      {/* ── Tailored Resume Preview Modal ────────────────── */}
-      {selectedResume && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.8)',
-          zIndex: 999999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '24px'
-        }}>
-          <div style={{
-            background: '#12121a',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '16px',
-            width: '100%',
-            maxWidth: '700px',
-            maxHeight: '85vh',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            boxShadow: '0 24px 64px rgba(0, 0, 0, 0.8)'
-          }}>
-            {/* Modal Header */}
-            <div style={{
-              padding: '20px 24px',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              background: '#161622'
-            }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600, color: '#f8fafc' }}>Application Assets</h3>
-                <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#94a3b8' }}>
-                  {selectedResume.title} at {selectedResume.company}
-                </p>
-              </div>
-              <button 
-                onClick={() => setSelectedResume(null)}
-                style={{ 
-                  background: 'none', 
-                  border: 'none', 
-                  color: '#94a3b8', 
-                  cursor: 'pointer',
-                  fontSize: '1.2rem',
-                  transition: 'color 0.2s'
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#ffffff'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Tabs Selector */}
-            <div style={{
-              display: 'flex',
-              background: '#14141e',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
-            }}>
-              <button
-                onClick={() => setActiveModalTab('resume')}
-                style={{
-                  flex: 1,
-                  padding: '14px',
-                  border: 'none',
-                  background: 'none',
-                  color: activeModalTab === 'resume' ? '#10b981' : '#94a3b8',
-                  fontWeight: activeModalTab === 'resume' ? 700 : 500,
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  borderBottom: activeModalTab === 'resume' ? '2px solid #10b981' : '2px solid transparent',
-                  transition: 'all 0.18s'
-                }}
-              >
-                📄 Tailored Resume
-              </button>
-              <button
-                onClick={() => {
-                  setActiveModalTab('outreach');
-                  if (!outreachPitch) {
-                    generateOutreachPitch();
-                  }
-                }}
-                style={{
-                  flex: 1,
-                  padding: '14px',
-                  border: 'none',
-                  background: 'none',
-                  color: activeModalTab === 'outreach' ? '#10b981' : '#94a3b8',
-                  fontWeight: activeModalTab === 'outreach' ? 700 : 500,
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  borderBottom: activeModalTab === 'outreach' ? '2px solid #10b981' : '2px solid transparent',
-                  transition: 'all 0.18s'
-                }}
-              >
-                ✉️ Recruiter Cold Outreach
-              </button>
-            </div>
-            
-            {/* Modal Body */}
-            <div style={{
-              padding: '24px',
-              overflowY: 'auto',
-              flex: 1,
-              whiteSpace: 'pre-wrap',
-              fontSize: '0.85rem',
-              lineHeight: 1.6,
-              background: '#09090d',
-              color: '#e2e8f0',
-              fontFamily: 'system-ui, -apple-system, sans-serif'
-            }}>
-              {activeModalTab === 'resume' ? (
-                selectedResume.tailored_resume
-              ) : isGeneratingPitch ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0', gap: '12px' }}>
-                  <div className="thinking-spinner" style={{ width: 28, height: 28, borderWidth: 3 }} />
-                  <span style={{ color: 'var(--text-secondary)' }}>Generating personalized templates via DeepSeek…</span>
-                </div>
-              ) : (
-                <div className="premium-markdown" style={{ color: '#d1d5db', fontFamily: 'sans-serif' }}>
-                  {selectedResume.hiring_team && (
-                    <div style={{
-                      background: 'rgba(255, 255, 255, 0.03)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '8px',
-                      padding: '12px',
-                      marginBottom: '16px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px'
-                    }}>
-                      {selectedResume.hiring_team.avatar ? (
-                        <img 
-                          src={selectedResume.hiring_team.avatar} 
-                          alt={selectedResume.hiring_team.name} 
-                          style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} 
-                        />
-                      ) : (
-                        <div style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '50%',
-                          background: 'rgba(16, 185, 129, 0.1)',
-                          color: '#10b981',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontWeight: 600,
-                          fontSize: '1rem'
-                        }}>
-                          {selectedResume.hiring_team.name.charAt(0)}
-                        </div>
-                      )}
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#f8fafc' }}>
-                          Hiring Manager: {selectedResume.hiring_team.name}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          {selectedResume.hiring_team.title || 'Hiring Team Member'}
-                        </div>
-                      </div>
-                      {selectedResume.hiring_team.link && (
-                        <a 
-                          href={selectedResume.hiring_team.link} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          style={{
-                            background: 'var(--accent)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            padding: '6px 12px',
-                            fontSize: '0.75rem',
-                            textDecoration: 'none',
-                            fontWeight: '600',
-                            transition: 'background 0.2s'
-                          }}
-                        >
-                          View LinkedIn ↗
-                        </a>
-                      )}
-                    </div>
-                  )}
-                  <ReactMarkdown
-                    components={{
-                      h1: ({node, ...props}) => <h1 style={{color: '#f8fafc', fontSize: '1.25rem', marginTop: '20px', marginBottom: '8px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '6px'}} {...props} />,
-                      h2: ({node, ...props}) => <h2 style={{color: '#f8fafc', fontSize: '1.15rem', marginTop: '16px', marginBottom: '8px'}} {...props} />,
-                      h3: ({node, ...props}) => <h3 style={{color: '#38bdf8', fontSize: '1.05rem', marginTop: '16px', marginBottom: '6px', fontWeight: '600'}} {...props} />,
-                      p: ({node, ...props}) => <p style={{color: '#cbd5e1', fontSize: '0.85rem', lineHeight: '1.6', margin: '0 0 12px 0'}} {...props} />,
-                      li: ({node, ...props}) => <li style={{color: '#cbd5e1', fontSize: '0.85rem', lineHeight: '1.6', margin: '0 0 4px 0'}} {...props} />,
-                      strong: ({node, ...props}) => <strong style={{color: '#38bdf8', fontWeight: '600'}} {...props} />,
-                    }}
-                  >
-                    {outreachPitch || 'No pitch templates generated.'}
-                  </ReactMarkdown>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div style={{
-              padding: '16px 20px',
-              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-              display: 'flex',
-              justifyContent: 'flex-end',
-              gap: '12px',
-              background: '#161622'
-            }}>
-              {activeModalTab === 'outreach' && outreachPitch && (
-                <button 
-                  onClick={() => {
-                    const subjectMatch = outreachPitch.match(/\*\*Subject:\*\*\s*(.*)/i) || outreachPitch.match(/Subject:\s*(.*)/i);
-                    const subject = subjectMatch ? subjectMatch[1].trim() : `Job Application - ${selectedResume.title} at ${selectedResume.company}`;
-                    
-                    let emailBody = outreachPitch;
-                    const emailIndex = outreachPitch.toLowerCase().indexOf('email');
-                    if (emailIndex !== -1) {
-                      emailBody = outreachPitch.substring(emailIndex);
-                    }
-                    emailBody = emailBody
-                      .replace(/\*\*Subject:\*\*\s*(.*)/i, '')
-                      .replace(/Subject:\s*(.*)/i, '')
-                      .replace(/^[#*-\s]+/gm, '')
-                      .replace(/\*\*/g, '');
-
-                    const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
-                    window.open(mailtoUrl, '_blank');
-                  }}
-                  className="header-btn"
-                  style={{ 
-                    background: '#a855f7', 
-                    color: '#fff', 
-                    border: 'none', 
-                    borderRadius: '8px',
-                    padding: '8px 16px',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                    fontSize: '0.85rem'
-                  }}
-                >
-                  📧 Open Draft Email
-                </button>
-              )}
-              <button 
-                onClick={() => {
-                  const content = activeModalTab === 'resume' ? selectedResume.tailored_resume : outreachPitch;
-                  navigator.clipboard.writeText(content);
-                  alert('Copied to clipboard!');
-                }}
-                className="header-btn"
-                style={{ 
-                  background: '#10b981', 
-                  color: '#fff', 
-                  border: 'none', 
-                  borderRadius: '8px',
-                  padding: '8px 16px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: '0.85rem'
-                }}
-                disabled={activeModalTab === 'outreach' && isGeneratingPitch}
-              >
-                📋 Copy Details
-              </button>
-              <button 
-                onClick={() => {
-                  const content = activeModalTab === 'resume' ? selectedResume.tailored_resume : outreachPitch;
-                  const suffix = activeModalTab === 'resume' ? 'Resume' : 'Outreach';
-                  const element = document.createElement("a");
-                  const file = new Blob([content], {type: 'text/plain'});
-                  element.href = URL.createObjectURL(file);
-                  element.download = `${selectedResume.company.replace(/\s+/g, '_')}_${selectedResume.title.replace(/\s+/g, '_')}_${suffix}.txt`;
-                  document.body.appendChild(element);
-                  element.click();
-                  document.body.removeChild(element);
-                }}
-                className="header-btn"
-                style={{ 
-                  background: '#38bdf8', 
-                  color: '#fff', 
-                  border: 'none', 
-                  borderRadius: '8px',
-                  padding: '8px 16px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: '0.85rem'
-                }}
-                disabled={activeModalTab === 'outreach' && isGeneratingPitch}
-              >
-                📥 Download Text
-              </button>
-              <button 
-                onClick={() => setSelectedResume(null)}
-                className="header-btn"
-                style={{ 
-                  background: '#232333', 
-                  color: '#ffffff', 
-                  border: '1px solid rgba(255, 255, 255, 0.15)', 
-                  borderRadius: '8px',
-                  padding: '8px 16px',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  transition: 'background 0.2s'
-                }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
