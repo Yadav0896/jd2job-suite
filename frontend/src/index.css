@@ -4538,3 +4538,29 @@ body.electron-mode .app-header {
   padding: 12px 24px !important;
   box-shadow: var(--shadow-xs) !important;
 }
+
+/* ─── Mobile Responsive ────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .app-container { flex-direction: column !important; }
+  .sidebar { display: none !important; }
+  .panel-left { flex: 1 !important; border-right: none !important; border-bottom: 1px solid var(--border); }
+  .main-content { flex-direction: column !important; }
+  .app-header { padding: 0 16px !important; height: 56px !important; }
+  .app-title { font-size: 0.85rem !important; }
+  .header-actions { gap: 4px !important; }
+  .header-btn { padding: 6px 10px !important; font-size: 0.7rem !important; }
+  .audio-controls { padding: 0 12px !important; height: auto !important; flex-wrap: wrap; gap: 8px; }
+  .controls-center { flex-wrap: wrap; }
+  .selector-grid-cards { grid-template-columns: 1fr !important; }
+  .setup-grid { grid-template-columns: 1fr !important; }
+  .session-layout { grid-template-columns: 1fr !important; }
+  .visualizer-card { min-height: 160px !important; }
+  .pricing-main-grid { grid-template-columns: 1fr !important; }
+  .auth-card { padding: 28px 20px !important; }
+}
+
+@media (max-width: 480px) {
+  .panel-left, .panel-right { padding: 8px !important; }
+  .btn { padding: 8px 14px !important; font-size: 0.8rem !important; }
+  .record-btn { width: 48px !important; height: 48px !important; }
+}

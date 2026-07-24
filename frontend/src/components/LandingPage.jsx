@@ -658,6 +658,41 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
 
       {legalPage && <LegalModal page={legalPage} onClose={() => setLegalPage(null)} />}
       <SupportWidget />
+
+      {/* Mobile responsive fixes */}
+      <style>{`
+        @media (max-width: 768px) {
+          .lp .hero-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+          .lp .hero h1 { font-size: 2.2rem !important; }
+          .lp .hero .lead { font-size: 0.9rem !important; }
+          .lp .scene3d { display: none !important; }
+          .lp .vrail { display: none !important; }
+          .lp .spin-grid { grid-template-columns: 1fr !important; }
+          .lp .spin-grid.rev { display: flex; flex-direction: column-reverse; }
+          .lp .steps { grid-template-columns: 1fr !important; }
+          .lp .bgrid { grid-template-columns: 1fr !important; }
+          .lp .sgrid { grid-template-columns: 1fr 1fr !important; }
+          .lp .twall { grid-template-columns: 1fr !important; }
+          .lp .pgrid { grid-template-columns: 1fr !important; }
+          .lp .faq-grid { grid-template-columns: 1fr !important; }
+          .lp .nav-links { display: none !important; }
+          .lp .nav-links.open { display: flex !important; flex-direction: column; position: absolute; top: 100%; left: 0; right: 0; background: var(--glass-bg, rgba(11,13,20,0.95)); backdrop-filter: blur(20px); padding: 16px; border-bottom: 1px solid var(--border); }
+          .lp .burger { display: block !important; }
+          .lp .foot-top { grid-template-columns: 1fr 1fr !important; }
+          .lp .hero-cta { flex-direction: column; }
+          .lp .cta-card { padding: 32px 20px !important; }
+          .lp .cta-card h2 { font-size: 1.6rem !important; }
+          .lp .news form { flex-direction: column; }
+          .lp .status .wrap { flex-wrap: wrap; justify-content: center; }
+          .lp { overflow-x: hidden; }
+        }
+        @media (max-width: 480px) {
+          .lp .hero h1 { font-size: 1.8rem !important; }
+          .lp .sgrid { grid-template-columns: 1fr !important; }
+          .lp .foot-top { grid-template-columns: 1fr !important; }
+          .lp .foot-bottom { flex-direction: column; gap: 12px !important; text-align: center; }
+        }
+      `}</style>
     </div>
   );
 };
