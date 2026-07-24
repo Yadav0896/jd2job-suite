@@ -51,7 +51,7 @@ const PricingPage = ({
 
   const planFeatures = {
     auto_apply: [
-      '2,000 Application Credits',
+      '2,000 Application Credits/month',
       'AI-tailored résumé per job',
       'Auto-apply on LinkedIn',
       'ATS match scoring',
@@ -186,7 +186,7 @@ const PricingPage = ({
                   <span className="price-currency">₹</span>
                   <span className="price-amount">{plan.amountINR}</span>
                   <span className="price-period">
-                    {plan.id === 'base' ? '/mo' : plan.id === 'topup' ? '/credit' : plan.id === 'monthly_unlimited' ? '/mo' : '/3 mo'}
+                    {plan.id === 'base' ? '/mo' : plan.id === 'auto_apply' ? '/mo' : plan.id === 'topup' ? '/credit' : plan.id === 'monthly_unlimited' ? '/mo' : '/3 mo'}
                   </span>
                 </div>
 

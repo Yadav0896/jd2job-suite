@@ -1119,7 +1119,10 @@ app.post('/api/payments/verify', requireAuth, async (req, res) => {
       updates.plan_type = 'auto_apply';
       updates.credits = (profile.credits || 0) + 2000;
       updates.plan_started_at = now.toISOString();
-      description = 'Auto-Apply Plan (2000 credits)';
+      const expires = new Date();
+      expires.setMonth(expires.getMonth() + 1);
+      updates.plan_expires_at = expires.toISOString();
+      description = 'Auto-Apply Plan (2000 credits/month)';
     } else if (planId === 'base' || amountINR === 999) {
       updates.plan_type = 'base';
       updates.credits = (profile.credits || 0) + 2000;
