@@ -13,6 +13,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
       features: 'Features — Auto Apply, Mock Interviews & More | Jd2Job',
       pricing: 'Pricing — Plans Starting at ₹499/mo | Jd2Job',
       faq: 'FAQ — Frequently Asked Questions | Jd2Job',
+      contact: 'Contact Us — Get in Touch | Jd2Job',
     };
     document.title = titles[section] || titles.home;
   }, [section]);
@@ -432,11 +433,15 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
         <header className="nav">
           <a className="brand" href="#top" aria-label="Jd2Job home"><span className="mark"><Jd2JobLogo width={24} height={24} /></span> Jd2Job</a>
           <nav className="nav-links" aria-label="Primary">
-            <a href="/features" onClick={nav('features')}>Features</a>
-            <a href="/pricing" onClick={nav('pricing')}>Pricing</a>
-            <a href="/faq" onClick={nav('faq')}>FAQ</a>
+            <a href="/features" onClick={nav('features')} style={{ color: section === 'features' ? 'var(--accent, #e08aae)' : undefined, fontWeight: section === 'features' ? 700 : undefined }}>Features</a>
+            <a href="/pricing" onClick={nav('pricing')} style={{ color: section === 'pricing' ? 'var(--accent, #e08aae)' : undefined, fontWeight: section === 'pricing' ? 700 : undefined }}>Pricing</a>
+            <a href="/faq" onClick={nav('faq')} style={{ color: section === 'faq' ? 'var(--accent, #e08aae)' : undefined, fontWeight: section === 'faq' ? 700 : undefined }}>FAQ</a>
+            <a href="/contact" onClick={nav('contact')} style={{ color: section === 'contact' ? 'var(--accent, #e08aae)' : undefined, fontWeight: section === 'contact' ? 700 : undefined }}>Contact</a>
           </nav>
           <div className="nav-right">
+            {isAuthenticated && (
+              <a className="signin" href="#" data-cursor="Dashboard" onClick={(e) => { e.preventDefault(); onStart(); }} style={{ marginRight: 12 }}>Dashboard</a>
+            )}
             <a className="signin" href="#" data-cursor="Sign in" onClick={(e) => { e.preventDefault(); onShowAuth(); }}>Sign in</a>
             <a className="btn btn-primary" href="#" data-magnetic data-cursor="Start" onClick={handleStart}>Start free <svg className="icon arrow"><use href="#i-arrow" /></svg></a>
             <button className="burger" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks"><svg className="icon"><use href="#i-menu" /></svg></button>
@@ -648,6 +653,26 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
           </div>
         </section>
 
+        {/* CONTACT PAGE */}
+        <section className="how" id="contact" style={{ display: (section === 'contact') ? '' : 'none' }}>
+          <div className="wrap" style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center', padding: '60px 20px' }}>
+            <span className="kicker reveal" style={{ justifyContent: 'center' }}>Get in touch</span>
+            <h2 className="split reveal">Talk to <span className="serif">a human.</span></h2>
+            <p className="lead reveal" style={{ marginBottom: 32 }}>We reply within a day, usually faster. No bots, no tickets — just us.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 400, margin: '0 auto' }}>
+              <a href="mailto:hello@jd2job.com" className="btn btn-primary" style={{ padding: '16px 32px', fontSize: '1rem' }} data-magnetic>
+                <svg className="icon" style={{ marginRight: 8 }}><use href="#i-mail" /></svg>
+                hello@jd2job.com
+              </a>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                <a href="https://x.com/jd2job" target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{ padding: '12px 20px' }}>𝕏 Twitter</a>
+                <a href="https://linkedin.com/company/jd2job" target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{ padding: '12px 20px' }}>💼 LinkedIn</a>
+                <a href="https://github.com/Yadav0896/jd2job-suite" target="_blank" rel="noopener noreferrer" className="btn btn-ghost" style={{ padding: '12px 20px' }}>🐙 GitHub</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* CTA */}
         <section className="cta" style={{ display: section === "home" ? "" : "none" }}>
           <div className="wrap"><div className="cta-card reveal"><div className="orb"></div><span className="kicker on-dark" style={{ justifyContent: 'center' }}>Your edge starts now</span><h2 className="split" style={{ marginTop: '22px' }}>Your next offer<span className="serif"> is already in the pile.</span></h2><p>Set up in two minutes. Your first tailored applications go out today.</p><div className="cta-actions"><a className="btn btn-light" href="#" data-magnetic data-cursor="Start" onClick={handleStart}>Start free <svg className="icon arrow"><use href="#i-arrow" /></svg></a><a className="btn btn-glass" href="#" data-cursor="Download" onClick={(e) => { e.preventDefault(); window.open('https://api.jd2job.com/api/download', '_blank'); }}><svg className="icon"><use href="#i-cube" /></svg> Get Desktop App</a></div><span className="micro"><svg className="icon"><use href="#i-shield" /></svg> No card · in-memory privacy · cancel anytime</span></div></div>
@@ -670,8 +695,15 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
       {legalPage && <LegalModal page={legalPage} onClose={() => setLegalPage(null)} />}
       <SupportWidget />
 
-      {/* Mobile responsive fixes */}
+      {/* Mobile responsive + Page transitions */}
       <style>{`
+        @keyframes fadePageIn {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        #main > section:not([style*="display: none"]), #main > div:not([style*="display: none"]) {
+          animation: fadePageIn 0.35s ease;
+        }
         @media (max-width: 768px) {
           .lp .hero-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
           .lp .hero h1 { font-size: 2.2rem !important; }

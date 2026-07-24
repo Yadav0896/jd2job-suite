@@ -104,6 +104,24 @@ function AppContent() {
     return !(state.isAuthenticated && savedWorkspace);
   });
   const [landingSection, setLandingSection]   = useState('home');
+
+  // Browser back/forward button support for landing pages
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname.replace('/', '') || 'home';
+      const validSections = ['home', 'features', 'pricing', 'faq', 'contact'];
+      if (validSections.includes(path)) setLandingSection(path);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateTo = (section) => {
+    setLandingSection(section);
+    const path = section === 'home' ? '/' : `/${section}`;
+    window.history.pushState({ section }, '', path);
+    window.scrollTo(0, 0);
+  };
   const [showAuth, setShowAuth]               = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState(() => {
     return localStorage.getItem('jd2job_activeWorkspace') || null;
@@ -425,7 +443,7 @@ function AppContent() {
         isAuthenticated={isAuthenticated}
         isAuthLoading={authLoading}
         section={landingSection}
-        onNavigate={(s) => setLandingSection(s)}
+        onNavigate={navigateTo}
         onShowAuth={() => { setShowLanding(false); setShowAuth(true); }}
         onShowPricing={() => { setShowLanding(false); setShowPricing(true); }}
         onStart={() => {
