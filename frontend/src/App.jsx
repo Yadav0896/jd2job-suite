@@ -103,7 +103,18 @@ function AppContent() {
     const savedWorkspace = localStorage.getItem('jd2job_activeWorkspace');
     return !(state.isAuthenticated && savedWorkspace);
   });
-  const [landingSection, setLandingSection]   = useState('home');
+  const [landingSection, setLandingSection]   = useState(() => {
+    // Read section from URL path or hash (supports both /pricing and #pricing)
+    const path = window.location.pathname.replace(/^\/+/, '') || 'home';
+    const hash = window.location.hash.replace('#', '');
+    const validSections = ['home', 'features', 'pricing', 'faq', 'contact'];
+    const section = validSections.includes(path) ? path : validSections.includes(hash) ? hash : 'home';
+    // Redirect old hash URLs to clean paths
+    if (validSections.includes(hash) && hash !== path) {
+      window.history.replaceState({ section: hash }, '', `/${hash}`);
+    }
+    return section;
+  });
 
   // Browser back/forward button support for landing pages
   useEffect(() => {
