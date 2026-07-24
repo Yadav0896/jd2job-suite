@@ -4,8 +4,20 @@ import LegalModal from './LegalModal';
 import SupportWidget from './SupportWidget';
 import Jd2JobLogo from './Jd2JobLogo';
 
-const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onShowPricing }) => {
+const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onShowPricing, section = 'home', onNavigate }) => {
   const rootRef = useRef(null);
+
+  useEffect(() => {
+    const titles = {
+      home: 'Jd2Job — AI Interview Copilot & Auto Apply for LinkedIn',
+      features: 'Features — Auto Apply, Mock Interviews & More | Jd2Job',
+      pricing: 'Pricing — Plans Starting at ₹499/mo | Jd2Job',
+      faq: 'FAQ — Frequently Asked Questions | Jd2Job',
+    };
+    document.title = titles[section] || titles.home;
+  }, [section]);
+
+  const nav = (to) => (e) => { e.preventDefault(); onNavigate?.(to); window.scrollTo(0, 0); };
   const [legalPage, setLegalPage] = useState(null); // 'privacy' | 'terms' | 'about'
 
   const handleStart = (e) => {
@@ -420,11 +432,9 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
         <header className="nav">
           <a className="brand" href="#top" aria-label="Jd2Job home"><span className="mark"><Jd2JobLogo width={24} height={24} /></span> Jd2Job</a>
           <nav className="nav-links" aria-label="Primary">
-            <a href="#auto-apply">Auto Apply</a>
-            <a href="#mock">Mock Interview</a>
-            <a href="#how">How it works</a>
-            <a href="#pricing">Pricing</a>
-            <a href="#faq">FAQ</a>
+            <a href="/features" onClick={nav('features')}>Features</a>
+            <a href="/pricing" onClick={nav('pricing')}>Pricing</a>
+            <a href="/faq" onClick={nav('faq')}>FAQ</a>
           </nav>
           <div className="nav-right">
             <a className="signin" href="#" data-cursor="Sign in" onClick={(e) => { e.preventDefault(); onShowAuth(); }}>Sign in</a>
@@ -437,7 +447,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
       <main id="main"><span id="top"></span>
 
         {/* HERO */}
-        <section className="hero" id="hero">
+        <section className="hero" id="hero" style={{ display: section === 'home' ? '' : 'none' }}>
           <canvas className="lp-gl" aria-hidden="true"></canvas>
           <div className="aurora-fb" aria-hidden="true"></div>
           <div className="vrail" aria-hidden="true">Auto Apply · AI Résumés · Voice Mocks</div>
@@ -489,7 +499,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
         </section>
 
         {/* MARQUEE */}
-        <div className="marquee" aria-hidden="true">
+        <div className="marquee" style={{ display: section === "home" ? "" : "none" }} aria-hidden="true">
           <div className="track">
             {[...marqueeWords, ...marqueeWords].map((w, i) => (
               <React.Fragment key={i}><span className="w">{w}</span><svg className="icon-f star"><use href="#i-star" /></svg></React.Fragment>
@@ -498,7 +508,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
         </div>
 
         {/* AUTO APPLY */}
-        <section className="spin" id="auto-apply">
+        <section className="spin" id="auto-apply" style={{ display: (section === "home" || section === "features") ? "" : "none" }}>
           <div className="wrap spin-grid">
             <div className="reveal">
               <span className="kicker"><span className="idx">(02)</span> Auto Apply</span>
@@ -527,7 +537,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
         </section>
 
         {/* MOCK INTERVIEW */}
-        <section className="spin spin-mint" id="mock">
+        <section className="spin spin-mint" id="mock" style={{ display: (section === "home" || section === "features") ? "" : "none" }}>
           <div className="wrap spin-grid rev">
             <div className="reveal">
               <div className="spin-stage"><div className="spin-obj">
@@ -556,7 +566,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
         </section>
 
         {/* HOW */}
-        <section className="how" id="how">
+        <section className="how" id="how" style={{ display: (section === "home" || section === "features") ? "" : "none" }}>
           <div className="wrap">
             <div className="head center reveal"><span className="kicker" style={{ justifyContent: 'center' }}><span className="idx">(04)</span> How it works</span><h2 className="split">From upload to offer in <span className="serif">three steps</span></h2><p className="lead">Configure once. Then let the machine do the grind while you do the talking.</p></div>
             <div className="steps">
@@ -568,7 +578,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
         </section>
 
         {/* BENTO */}
-        <section className="bento" id="features">
+        <section className="bento" id="features" style={{ display: (section === "home" || section === "features") ? "" : "none" }}>
           <div className="wrap">
             <div className="head center reveal"><span className="kicker" style={{ justifyContent: 'center' }}><span className="idx">(05)</span> Everything it does</span><h2 className="split">One tool for the <span className="serif">whole loop.</span></h2><p className="lead">Hover a tile — the content lifts toward you in 3D.</p></div>
             <div className="bgrid">
@@ -584,7 +594,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
         </section>
 
         {/* STATS */}
-        <section className="stats" id="statsBand">
+        <section className="stats" id="statsBand" style={{ display: section === "home" ? "" : "none" }}>
           <div className="orb"></div>
           <div className="wrap"><div className="sgrid">
             <div className="stat reveal"><div className="n"><span data-count="12000">0</span><span className="u">+</span></div><div className="l">Applications sent and counting</div></div>
@@ -595,7 +605,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
         </section>
 
         {/* TESTIMONIALS */}
-        <section className="testi">
+        <section className="testi" style={{ display: section === "home" ? "" : "none" }}>
           <div className="wrap">
             <div className="head center reveal"><span className="kicker" style={{ justifyContent: 'center' }}><span className="idx">(06)</span> In their words</span><h2 className="split">Real people. <span className="serif">Real offers.</span></h2><p className="lead">Thousands job hunt with Jd2Job in their corner. Here's what changed.</p></div>
             <div className="twall">
@@ -610,7 +620,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
         </section>
 
         {/* PRICING */}
-        <section className="pricing" id="pricing">
+        <section className="pricing" id="pricing" style={{ display: (section === "home" || section === "pricing") ? "" : "none" }}>
           <div className="wrap">
             <div className="head center reveal"><span className="kicker" style={{ justifyContent: 'center' }}><span className="idx">(07)</span> Pricing</span><h2 className="split">Price it against one <span class="serif">salary bump.</span></h2><p className="lead">Start free. Upgrade when the interviews pile up. Leave in two clicks.</p></div>
             <div className="pgrid">
@@ -625,7 +635,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
         </section>
 
         {/* FAQ */}
-        <section className="faq" id="faq">
+        <section className="faq" id="faq" style={{ display: (section === "home" || section === "faq") ? "" : "none" }}>
           <div className="wrap faq-grid">
             <div className="faq-left"><span className="kicker reveal"><span className="idx">(08)</span> FAQ</span><h2 className="split reveal">The honest <span className="serif">answers.</span></h2><p className="lead reveal">The questions people actually email us about. Still curious?</p><div className="faq-card reveal"><h4>Talk to a human</h4><p>We reply within a day, usually faster.</p><a className="btn btn-ghost" href="mailto:hello@jd2job.com" style={{ padding: '11px 18px' }} data-cursor="Email"><svg className="icon"><use href="#i-mail" /></svg> hello@jd2job.com</a></div></div>
             <div className="flist">
@@ -639,7 +649,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
         </section>
 
         {/* CTA */}
-        <section className="cta">
+        <section className="cta" style={{ display: section === "home" ? "" : "none" }}>
           <div className="wrap"><div className="cta-card reveal"><div className="orb"></div><span className="kicker on-dark" style={{ justifyContent: 'center' }}>Your edge starts now</span><h2 className="split" style={{ marginTop: '22px' }}>Your next offer<span className="serif"> is already in the pile.</span></h2><p>Set up in two minutes. Your first tailored applications go out today.</p><div className="cta-actions"><a className="btn btn-light" href="#" data-magnetic data-cursor="Start" onClick={handleStart}>Start free <svg className="icon arrow"><use href="#i-arrow" /></svg></a><a className="btn btn-glass" href="#" data-cursor="Download" onClick={(e) => { e.preventDefault(); window.open('https://api.jd2job.com/api/download', '_blank'); }}><svg className="icon"><use href="#i-cube" /></svg> Get Desktop App</a></div><span className="micro"><svg className="icon"><use href="#i-shield" /></svg> No card · in-memory privacy · cancel anytime</span></div></div>
         </section>
       </main>
@@ -648,7 +658,7 @@ const LandingPage = ({ onStart, isAuthenticated, onShowAuth, isAuthLoading, onSh
         <div className="wrap">
           <div className="foot-top">
             <div className="foot-brand"><a className="brand" href="#top"><span className="mark"><Jd2JobLogo width={24} height={24} /></span> Jd2Job</a><p>The job-search copilot — Auto Apply, AI résumés and voice mock interviews.</p></div>
-            <div className="foot-col"><h4>Product</h4><a href="#auto-apply">Auto Apply</a><a href="#mock">Mock Interview</a><a href="#pricing">Pricing</a><a href="#" onClick={(e) => { e.preventDefault(); window.open('https://api.jd2job.com/api/download', '_blank'); }}>Desktop App</a><a href="/blog">Blog</a><a href="#faq">FAQ</a></div>
+            <div className="foot-col"><h4>Product</h4><a href="/features" onClick={nav('features')}>Features</a><a href="/pricing" onClick={nav('pricing')}>Pricing</a><a href="#" onClick={(e) => { e.preventDefault(); window.open('https://api.jd2job.com/api/download', '_blank'); }}>Desktop App</a><a href="/blog">Blog</a><a href="/faq" onClick={nav('faq')}>FAQ</a></div>
             <div className="foot-col"><h4>Company</h4><a href="#about" onClick={(e) => { e.preventDefault(); setLegalPage('about'); }}>About</a><a href="#privacy" onClick={(e) => { e.preventDefault(); setLegalPage('privacy'); }}>Privacy</a><a href="#terms" onClick={(e) => { e.preventDefault(); setLegalPage('terms'); }}>Terms</a><a href="mailto:hello@jd2job.com">Contact</a></div>
             <div className="news"><h4>The short list</h4><p>Job-search notes and product changes. A few times a year, never more.</p><form onSubmit={(e) => { e.preventDefault(); window.open('mailto:hello@jd2job.com?subject=Newsletter%20Signup', '_blank'); }}><label htmlFor="lp-email">Email address</label><input id="lp-email" type="email" placeholder="you@email.com" autoComplete="email" required /><button className="btn btn-primary" type="submit" aria-label="Subscribe" style={{ padding: '12px 14px' }}><svg className="icon"><use href="#i-arrow" /></svg></button></form></div>
           </div>

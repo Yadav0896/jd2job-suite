@@ -103,6 +103,7 @@ function AppContent() {
     const savedWorkspace = localStorage.getItem('jd2job_activeWorkspace');
     return !(state.isAuthenticated && savedWorkspace);
   });
+  const [landingSection, setLandingSection]   = useState('home');
   const [showAuth, setShowAuth]               = useState(false);
   const [activeWorkspace, setActiveWorkspace] = useState(() => {
     return localStorage.getItem('jd2job_activeWorkspace') || null;
@@ -423,6 +424,8 @@ function AppContent() {
       <LandingPage
         isAuthenticated={isAuthenticated}
         isAuthLoading={authLoading}
+        section={landingSection}
+        onNavigate={(s) => setLandingSection(s)}
         onShowAuth={() => { setShowLanding(false); setShowAuth(true); }}
         onShowPricing={() => { setShowLanding(false); setShowPricing(true); }}
         onStart={() => {
