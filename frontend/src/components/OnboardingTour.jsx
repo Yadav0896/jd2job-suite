@@ -88,7 +88,8 @@ export default function OnboardingTour({ onComplete }) {
     if (step >= STEPS.length - 1) {
       setVisible(false);
       localStorage.setItem('jd2job_onboarding_done', 'true');
-      onComplete?.();
+      // Defer onComplete to avoid render conflict with setVisible(false)
+      setTimeout(() => onComplete?.(), 100);
     } else {
       setStep(s => s + 1);
     }
@@ -97,7 +98,7 @@ export default function OnboardingTour({ onComplete }) {
   const skip = () => {
     setVisible(false);
     localStorage.setItem('jd2job_onboarding_done', 'true');
-    onComplete?.();
+    setTimeout(() => onComplete?.(), 100);
   };
 
   const prev = () => {
